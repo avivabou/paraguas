@@ -21,4 +21,5 @@ export {
     type CreateTranslationResolverOptions,
 } from './runtime/resolver';
 export { createLocaleSet, UnsupportedLocaleError, type LocaleSet } from './runtime/locales';
+export { resolveLocale, LocaleNotPreloadedError } from './runtime/resolve-locale';
 export type { DeepMerge, MapNamespaces, LocaleKeysOf } from './runtime/types';

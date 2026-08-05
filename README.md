@@ -60,6 +60,26 @@ The proxy turns property access into dotted key paths and calls your translate f
 
 `splitWithTokens(text, wrappers)` is the React-free core: it splits `'See [x]docs[/x] now'` into `['See ', wrappers.x('docs'), ' now']`. A React consumer joins the parts with `createElement(Fragment, …)`; `stringTokenRenderer` joins them into a plain string (handy for tests and backends).
 
+### Embeds inside ICU plurals
+
+Token tags compose with ICU plural/select because of the resolution order: the proxy resolves the ICU message **first** (branch selected, `#` substituted — brackets are plain text to ICU), and only **then** renders the tags of the surviving branch:
+
+```ts
+const resolver = createTranslationResolver({
+    primary: {
+        items: '{count, plural, one {[undo]Undo # item[/undo]} other {# items — [undo]undo all[/undo]}}',
+    },
+});
+const texts = createLocaleProxy<ItemsKeys>((key, values) => resolver.t(key, values), {
+    renderTokens: stringTokenRenderer,
+});
+
+texts.items({ count: 1 }, { undo: (label) => `<${label}>` }); // '<Undo 1 item>'
+texts.items({ count: 3 }, { undo: (label) => `<${label}>` }); // '3 items — <undo all>'
+```
+
+Tags in non-selected branches are never rendered; a tag may appear in some branches only — the wrapper is simply unused for counts that select a tag-less branch.
+
 Type utilities: `DeepMerge`, `MapNamespaces`, `LocaleKeysOf<Recipes, TypeMap, Recipe>`, `NestedPaths`, `GetNestedValue`, plus `createLocaleSet(['en', 'es'])` for locale guards.
 
 ## `paraguas/server` — the loader

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createLocaleProxy, MissingTokenRendererError } from '../src/runtime/locale-proxy';
+import { createTranslationResolver } from '../src/runtime/resolver';
 import { stringTokenRenderer } from '../src/runtime/tokens';
 
 interface FakeKeys {
@@ -71,5 +72,25 @@ describe('createLocaleProxy', () => {
         });
         proxy.errors.nested.$value();
         expect(paths).toEqual(['errors.nested']);
+    });
+});
+
+describe('embeds inside ICU plurals', () => {
+    interface PluralKeys {
+        items: (data: Record<'count', unknown>, embeds: Record<'undo', (label: string) => string>) => string;
+    }
+
+    it('renders the tag of the selected plural branch', () => {
+        const resolver = createTranslationResolver({
+            primary: {
+                items: '{count, plural, one {[undo]Undo # item[/undo]} other {# items — [undo]undo all[/undo]}}',
+            },
+        });
+        const proxy = createLocaleProxy<PluralKeys>((key, values) => resolver.t(key, values), {
+            renderTokens: stringTokenRenderer,
+        });
+
+        expect(proxy.items({ count: 1 }, { undo: (label) => `<${label}>` })).toBe('<Undo 1 item>');
+        expect(proxy.items({ count: 3 }, { undo: (label) => `<${label}>` })).toBe('3 items — <undo all>');
     });
 });

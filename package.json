@@ -1,6 +1,6 @@
 {
   "name": "paraguas",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generic i18n mechanism: recipe-based locale build pipeline, typed runtime proxy with embedded-component rendering, and a server-side loader",
   "license": "MIT",
   "author": "avivabou",
@@ -52,7 +52,8 @@
     "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
-    "intl-messageformat": "^11.2.4"
+    "intl-messageformat": "^11.2.4",
+    "keys-weaver": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

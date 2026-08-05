@@ -1,5 +1,11 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import {
+    generate as keysWeaverGenerate,
+    icuData,
+    taggedEmbeds,
+    type GenerateOptions as KeysWeaverOptions,
+} from 'keys-weaver';
 import type { TokenStructure } from '../runtime/tokens';
 
 export class ValidationError extends Error {
@@ -23,7 +29,19 @@ export interface ParaguasBuildConfig {
     structures?: TokenStructure[];
     generatedDir?: string;
     generate?: (request: GenerateRequest) => Promise<unknown> | unknown;
+    codegen?: Omit<KeysWeaverOptions, 'source' | 'output' | 'functionName'>;
     functionNameFor?: (namespace: string) => string;
+}
+
+function defaultGenerate(codegen: ParaguasBuildConfig['codegen']): (request: GenerateRequest) => Promise<unknown> {
+    return ({ source, output, functionName }) =>
+        keysWeaverGenerate({
+            structures: [icuData(), taggedEmbeds()],
+            ...codegen,
+            source,
+            output,
+            functionName,
+        });
 }
 
 export function getLeafPaths(obj: unknown, prefix = ''): string[] {
@@ -237,8 +255,9 @@ function listNamespaces(localesDir: string, refLang: string): string[] {
 }
 
 async function generateNamespaceTypes(config: ParaguasBuildConfig): Promise<void> {
-    const { localesDir, languages, generatedDir, generate } = config;
-    if (generatedDir == null || generate == null) return;
+    const { localesDir, languages, generatedDir } = config;
+    const generate = config.generate ?? defaultGenerate(config.codegen);
+    if (generatedDir == null) return;
     const refLang = languages[0];
     if (refLang == null) return;
 

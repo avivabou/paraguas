@@ -185,3 +185,17 @@ describe('orphan pruning', () => {
         expect(fs.existsSync(path.join(generatedDir, 'namespace-type-map.ts'))).toBe(true);
     });
 });
+
+describe('default codegen', () => {
+    it('generates keys-weaver typed files when no generate fn is injected', async () => {
+        writeNamespace('en', 'banner', { greeting: 'Hi {name}!', cta: 'See [readMore]more[/readMore]' });
+        writeNamespace('es', 'banner', { greeting: '¡Hola {name}!', cta: 'Ver [readMore]más[/readMore]' });
+
+        const generatedDir = path.join(rootDir, 'generated');
+        await build({ ...baseConfig({ app: ['banner'] }), generatedDir, codegen: { sortKeys: true } });
+
+        const generated = fs.readFileSync(path.join(generatedDir, 'BannerKeys.ts'), 'utf-8');
+        expect(generated).toContain("greeting: (data: DataFields<'name'>) => string;");
+        expect(generated).toContain("cta: (embeds: EmbedFields<'readMore'>) => JSX.Element;");
+    });
+});

@@ -160,3 +160,28 @@ describe('build', () => {
         expect(typeMap).toContain('    pages: IPagesKeys;');
     });
 });
+
+describe('orphan pruning', () => {
+    it('removes generated entries whose namespace no longer exists', async () => {
+        writeNamespace('en', 'pages', { a: 'A' });
+        writeNamespace('es', 'pages', { a: 'A-es' });
+
+        const generatedDir = path.join(rootDir, 'generated');
+        fs.mkdirSync(path.join(generatedDir, 'RemovedNsKeys'), { recursive: true });
+        fs.writeFileSync(path.join(generatedDir, 'OrphanKeys.ts'), 'export type IOrphanKeys = {};');
+        fs.writeFileSync(path.join(generatedDir, 'RemovedNsKeys', 'index.ts'), 'export type IRemovedNsKeys = {};');
+
+        await build({
+            ...baseConfig({ app: ['pages'] }),
+            generatedDir,
+            generate: ({ output, functionName }) => {
+                fs.writeFileSync(path.join(output, `${functionName}.ts`), `export type I${functionName} = {};`);
+            },
+        });
+
+        expect(fs.existsSync(path.join(generatedDir, 'OrphanKeys.ts'))).toBe(false);
+        expect(fs.existsSync(path.join(generatedDir, 'RemovedNsKeys'))).toBe(false);
+        expect(fs.existsSync(path.join(generatedDir, 'PagesKeys.ts'))).toBe(true);
+        expect(fs.existsSync(path.join(generatedDir, 'namespace-type-map.ts'))).toBe(true);
+    });
+});

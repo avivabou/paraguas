@@ -254,6 +254,27 @@ async function generateNamespaceTypes(config: ParaguasBuildConfig): Promise<void
     }
 }
 
+function pruneOrphanedGeneratedFiles(config: ParaguasBuildConfig): void {
+    const { localesDir, languages, generatedDir } = config;
+    if (generatedDir == null || !fs.existsSync(generatedDir)) return;
+    const refLang = languages[0];
+    if (refLang == null) return;
+
+    const functionNameFor = config.functionNameFor ?? defaultFunctionNameFor;
+    const expected = new Set(['namespace-type-map.ts']);
+    for (const ns of listNamespaces(localesDir, refLang)) {
+        const functionName = functionNameFor(ns);
+        expected.add(`${functionName}.ts`);
+        expected.add(functionName);
+    }
+
+    for (const entry of fs.readdirSync(generatedDir)) {
+        if (!expected.has(entry)) {
+            fs.rmSync(path.join(generatedDir, entry), { recursive: true, force: true });
+        }
+    }
+}
+
 function generateNamespaceTypeMap(config: ParaguasBuildConfig, typeParams: string[]): void {
     const { localesDir, languages, generatedDir } = config;
     if (generatedDir == null) return;
@@ -294,4 +315,5 @@ export async function build(config: ParaguasBuildConfig, extras: BuildExtras = {
     validateAndMerge(config);
     await generateNamespaceTypes(config);
     generateNamespaceTypeMap(config, extras.typeMapTypeParams ?? []);
+    pruneOrphanedGeneratedFiles(config);
 }

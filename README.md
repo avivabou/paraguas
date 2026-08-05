@@ -31,9 +31,10 @@ await build(
         generate: ({ source, output, functionName }) =>
             generate({ source, output, functionName, layout: 'per-node' }),
     },
-    { typeMapTypeParams: ['TEmbed'] },
 );
 ```
+
+(`build` also accepts a second `extras` argument — e.g. `{ typeMapTypeParams: [...] }` when the codegen emits generic key types; with tokify's defaults the generated types are non-generic and it is unnecessary.)
 
 Pipeline order:
 

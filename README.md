@@ -2,7 +2,7 @@
 
 A generic i18n mechanism for TypeScript monorepos: a **recipe-based locale build pipeline**, a **typed runtime proxy** with embedded-component rendering, and a **server-side loader** — consumable by both frontend apps and backend services.
 
-paraguas owns the mechanism; your project owns the locale JSONs, the recipe definitions, and the generated types. Pair it with a codegen package such as [tokify](https://github.com/avivabou/tokify) for per-key typed functions.
+paraguas owns the mechanism; your project owns the locale JSONs, the recipe definitions, and the generated types. Pair it with a codegen package such as [keys-weaver](https://github.com/avivabou/keys-weaver) for per-key typed functions.
 
 ```
 npm install paraguas
@@ -18,7 +18,7 @@ npm install paraguas
 
 ```ts
 import { build, bracketTagStructure } from 'paraguas/build';
-import { generate } from 'tokify';
+import { generate } from 'keys-weaver';
 
 await build(
     {
@@ -34,7 +34,7 @@ await build(
 );
 ```
 
-(`build` also accepts a second `extras` argument — e.g. `{ typeMapTypeParams: [...] }` when the codegen emits generic key types; with tokify's defaults the generated types are non-generic and it is unnecessary.)
+(`build` also accepts a second `extras` argument — e.g. `{ typeMapTypeParams: [...] }` when the codegen emits generic key types; with keys-weaver's defaults the generated types are non-generic and it is unnecessary.)
 
 Pipeline order:
 

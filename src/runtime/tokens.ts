@@ -1,11 +1,13 @@
+import { BASIC_HTML_TAGS } from 'keys-weaver/runtime';
+
+export { BASIC_HTML_TAGS };
+
 export interface TokenStructure {
     id: string;
     pattern: RegExp;
     malformedPattern?: RegExp;
     exclude?: string[];
 }
-
-export const BASIC_HTML_TAGS = ['br', 'strong', 'i', 'p'];
 
 export const angleTagStructure: TokenStructure = {
     id: 'embed',

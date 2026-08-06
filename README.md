@@ -141,6 +141,19 @@ Per-request pick from a preloaded map: accepts anything (query param, header, st
 
 `createLocaleSet(['en', 'fr'] as const)` → `{ SUPPORTED_LOCALES, DEFAULT_LOCALE, isSupportedLocale }` as one typed unit. `DEFAULT_LOCALE` is the first entry.
 
+### `defineLocalePackage({ languages, recipes })`
+
+The one-call glue for a consumer monorepo's i18n package — returns everything the pieces above would be wired into by hand:
+
+| Field | What it is |
+| --- | --- |
+| `localeSet` | The `createLocaleSet` result for `languages` |
+| `languages`, `recipes` | Passthrough, `const`-typed — spread into `build()` |
+| `loadOptions(distDir, proxy?)` | `LoadOptions` factory for the server loaders |
+| `resolve(raw, locales)` | `resolveLocale` bound to the package's locale set |
+
+`LocaleKeysFor<typeof pkg, NamespaceTypeMap, R>` derives the recipe-keyed translation type from the package object. See the full setup below.
+
 ### Type utilities
 
 | Utility | What it gives you |
@@ -149,6 +162,7 @@ Per-request pick from a preloaded map: accepts anything (query param, header, st
 | `NestedPaths<T>` | Union of every dotted key path — autocomplete on `'shop.actions.buttons.viewOrder' \| …` |
 | `GetNestedValue<T, Path>` | The value type at a path — hand helpers a **namespace slice** instead of the whole tree |
 | `DeepMerge<[A, B, …]>` | The type-level twin of the build-time merge |
+| `LocaleKeysFor<Pkg, TypeMap, R>` | `LocaleKeysOf` keyed off a `defineLocalePackage` object |
 
 ## `paraguas/react` — the React renderer
 

@@ -160,7 +160,7 @@ The one-call glue for a consumer monorepo's i18n package — returns everything 
 | --- | --- |
 | `LocaleKeysOf<Recipes, TypeMap, R>` | The deeply-merged translation type for a recipe |
 | `NestedPaths<T>` | Union of every dotted key path — autocomplete on `'shop.actions.buttons.viewOrder' \| …` |
-| `GetNestedValue<T, Path>` | The value type at a path — hand helpers a **namespace slice** instead of the whole tree |
+| `GetNestedValue<T, Path>` | The value type at a path — define a `Texts<P>` alias once in your glue package and use it in every helper signature |
 | `DeepMerge<[A, B, …]>` | The type-level twin of the build-time merge |
 | `LocaleKeysFor<Pkg, TypeMap, R>` | `LocaleKeysOf` keyed off a `defineLocalePackage` object |
 
@@ -237,11 +237,13 @@ packages/my-i18n/
 
 ```ts
 // packages/my-i18n/src/index.ts — the type glue every consumer imports
-import type { LocaleKeysFor } from 'paraguas';
+import type { GetNestedValue, LocaleKeysFor, NestedPaths } from 'paraguas';
 import type { NamespaceTypeMap } from './generated/namespace-type-map';
 import { i18nPackage } from './package';
 
 export type LocaleKeys<R extends keyof typeof i18nPackage.recipes> = LocaleKeysFor<typeof i18nPackage, NamespaceTypeMap, R>;
+export type EmailKeys = LocaleKeys<'emails'>;
+export type EmailTexts<P extends NestedPaths<EmailKeys>> = GetNestedValue<EmailKeys, P>;
 export { createLocaleProxy } from 'paraguas';
 export { i18nPackage };
 ```
@@ -279,11 +281,10 @@ i18next loads `my-i18n/dist/web/<lang>.json` (bundle it in dev, fetch it lazily 
 
 ```tsx
 // emails/src/i18n.ts
-import { i18nPackage, type LocaleKeys } from 'my-i18n';
+import { i18nPackage, type EmailKeys } from 'my-i18n';
 import { stringTokenRenderer } from 'paraguas';
 import { preloadTypedLocales } from 'paraguas/server';
 
-export type EmailKeys = LocaleKeys<'emails'>;
 const distDir = require.resolve('my-i18n/package.json').replace('package.json', 'dist');
 const options = i18nPackage.loadOptions(distDir, { renderTokens: stringTokenRenderer });
 export const preloadEmailLocales = () => preloadTypedLocales<EmailKeys>('emails', options);
@@ -301,10 +302,10 @@ app.post('/order-shipped', (req, res) => {
 });
 ```
 
-Thread **namespace slices**, not the whole tree:
+Thread **namespace slices**, not the whole tree — through the `EmailTexts` alias the glue package exports:
 
 ```ts
-function renderShippedEmail({ t, order }: { t: GetNestedValue<EmailKeys, 'emails.orderShipped'>; order: Order }) {
+function renderShippedEmail({ t, order }: { t: EmailTexts<'emails.orderShipped'>; order: Order }) {
     return `${t.subject({ orderId: order.id })}\n${t.body({ eta: order.eta })}`;
 }
 ```
@@ -353,8 +354,8 @@ t.greeting({ name });
 
 // ❌ handing a helper the entire locale tree
 function fmt(t: EmailKeys) { … }
-// ✅ the slice it needs
-function fmt(t: GetNestedValue<EmailKeys, 'emails.orderShipped'>) { … }
+// ✅ the slice it needs, via the alias defined once in the glue package
+function fmt(t: EmailTexts<'emails.orderShipped'>) { … }
 ```
 
 ## Guarantees at a glance

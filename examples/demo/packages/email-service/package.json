@@ -1,0 +1,13 @@
+{
+  "name": "@demo/email-service",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "demo": "tsx src/demo.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@demo/i18n": "*",
+    "paraguas": "latest"
+  }
+}

@@ -1,14 +1,14 @@
 {
   "name": "paraguas-demo",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsx src/build.ts",
-    "demo": "tsx src/demo.ts",
-    "typecheck": "tsc --noEmit",
+    "build": "npm run build -w @demo/i18n",
+    "demo": "npm run demo -w @demo/email-service && npm run demo -w @demo/web",
+    "typecheck": "npm run typecheck -w @demo/email-service && npm run typecheck -w @demo/web",
     "start": "npm run build && npm run demo && npm run typecheck"
-  },
-  "dependencies": {
-    "paraguas": "latest"
   },
   "devDependencies": {
     "tsx": "^4.19.0",

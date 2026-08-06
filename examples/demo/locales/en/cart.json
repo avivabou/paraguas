@@ -1,6 +1,0 @@
-{
-    "cart": {
-        "summary": "{count, plural, =0 {Your cart is empty} one {# item in your cart} other {# items in your cart}}",
-        "cta": "Ready? [checkout]Go to checkout[/checkout] or keep browsing."
-    }
-}

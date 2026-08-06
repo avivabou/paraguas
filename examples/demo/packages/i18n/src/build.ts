@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { build, bracketTagStructure, icuData, taggedEmbeds } from 'paraguas/build';
+import { build, bracketTagStructure } from 'paraguas/build';
 import { i18nPackage } from './package';
 
 const rootDir = path.resolve(__dirname, '..');
@@ -11,5 +11,5 @@ build({
     languages: i18nPackage.languages,
     recipes: i18nPackage.recipes,
     structures: [bracketTagStructure],
-    codegen: { sortKeys: true, structures: [icuData(), taggedEmbeds({ elementType: 'string' })] },
-}).then(() => console.log('built: dist/web/{en,fr}.json + src/generated/CartKeys.ts'));
+    codegen: { sortKeys: true },
+}).then(() => console.log('@demo/i18n built: dist/{web,emails}/{en,fr}.json + generated types'));

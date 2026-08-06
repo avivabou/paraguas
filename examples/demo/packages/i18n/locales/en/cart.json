@@ -1,0 +1,17 @@
+{
+    "shop": {
+        "actions": {
+            "buttons": {
+                "addToCart": "Add to cart",
+                "clearCart": "Clear cart"
+            }
+        }
+    },
+    "cart": {
+        "summary": "{count, plural, =0 {Your cart is empty} one {# item in your cart} other {# items in your cart}}",
+        "removed": "{count, plural, one {Removed # item — [undo]undo[/undo]} other {Removed # items — [undo]undo all[/undo]}}",
+        "cta": "Ready? [checkout]Go to checkout[/checkout] or keep browsing.",
+        "greeting": "{gender, select, female {Welcome back, Mrs. {name}} male {Welcome back, Mr. {name}} other {Welcome back, {name}}}",
+        "inboxNudge": "{count, plural, one {You have [inbox]# unread message[/inbox]} other {You have [inbox]# unread messages[/inbox]}}"
+    }
+}

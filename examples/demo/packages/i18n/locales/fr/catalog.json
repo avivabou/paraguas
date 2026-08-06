@@ -1,0 +1,6 @@
+{
+    "catalog": {
+        "title": "Notre catalogue",
+        "itemLine": "{name} — {price, number} ({stock, plural, =0 {rupture de stock} other {# en stock}})"
+    }
+}

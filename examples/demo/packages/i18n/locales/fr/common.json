@@ -1,0 +1,14 @@
+{
+    "shop": {
+        "actions": {
+            "buttons": {
+                "viewOrder": "Voir la commande",
+                "trackShipment": "Suivre le colis"
+            },
+            "status": {
+                "shipped": "Expédiée",
+                "processing": "En cours"
+            }
+        }
+    }
+}

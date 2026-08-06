@@ -1,0 +1,8 @@
+{
+    "emails": {
+        "orderShipped": {
+            "subject": "La commande {orderId} est en route !",
+            "body": "Bonne nouvelle — {count, plural, one {votre colis a été expédié} other {vos # colis ont été expédiés}} le {shippedAt, date, medium}."
+        }
+    }
+}

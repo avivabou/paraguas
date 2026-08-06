@@ -15,3 +15,12 @@ describe('getNestedValue', () => {
         expect(getNestedValue(null, 'a')).toBeUndefined();
     });
 });
+
+describe('getNestedValue over a locale proxy', () => {
+    it('slices a callable-proxy tree (proxy targets are functions)', async () => {
+        const { createLocaleProxy } = await import('../src/runtime/locale-proxy');
+        const proxy = createLocaleProxy<Record<string, never>>((key) => `resolved:${key}`);
+        const slice = getNestedValue(proxy, 'pages.dashboard') as Record<string, () => string>;
+        expect(slice.title()).toBe('resolved:pages.dashboard.title');
+    });
+});

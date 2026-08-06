@@ -6,7 +6,7 @@ function CartBanner({ texts, itemCount }: { texts: LocaleKeyTexts<'cart'>; itemC
         <section>
             <h1>{texts.greeting({ gender: 'female', name: 'Ada' })}</h1>
             <p>{texts.summary({ count: itemCount })}</p>
-            <p>{texts.removed({ count: 2 }, { undo: (label) => <button data-action="undo">{label}</button> })}</p>
+            <p>{texts.removed({ count: 2 }, { clear: (label) => <button data-action="clear">{label}</button> })}</p>
             <p>{texts.cta({ checkout: (label) => <a href="/checkout">{label}</a> })}</p>
         </section>
     );

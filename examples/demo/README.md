@@ -11,7 +11,8 @@ packages/
 
 ```
 npm install
-npm start        # build i18n → run both consumers → typecheck both
+npm start                    # build i18n → run both consumers → typecheck both
+npm run preview -w @demo/web # interactive browser app: language toggle + count slider
 ```
 
 [Open in StackBlitz](https://stackblitz.com/github/avivabou/paraguas/tree/main/examples/demo)
@@ -20,7 +21,8 @@ npm start        # build i18n → run both consumers → typecheck both
 
 - **Recipes** — `web` gets `catalog`+`cart`+`common`; `emails` gets `emails`+`common`. Referencing `texts.emails` from the web app is a compile error (see `typeSafetyShowcase` in `packages/web/src/demo.tsx`).
 - **Deep merge** — `cart.json` and `common.json` both contribute to `shop.actions.buttons`; each consumer sees its recipe's union of that branch.
-- **React embedding** — `[undo]…[/undo]` / `[checkout]…[/checkout]` tags become real `<button>`/`<a>` elements via `reactTokenRenderer`; the wrappers argument is compile-enforced.
+- **React embedding** — `[undo]…[/undo]` / `[checkout]…[/checkout]` tags become real `<button>`/`<a>` elements via `reactTokenRenderer`; the wrappers argument is compile-enforced. `npm run preview -w @demo/web` serves an interactive Vite app (the `undo` button actually mutates state), while `demo.tsx` prints the same components via `renderToStaticMarkup`.
+- **Browser vs server loading** — the Vite app imports the dist bundles directly and resolves through the browser-safe `paraguas` entry (`browser-i18n.ts`); the console demos read from disk through `@demo/i18n/server` — same keys, same types, two runtimes.
 - **ICU × embeds** — `cart.inboxNudge` puts the plural `#` *inside* the embedded label: `You have <a href="/inbox">5 unread messages</a>` — the link text morphs with the count, per language.
 - **ICU variety** — plurals, `select` (gendered greeting), number formatting (`1,299` vs French `1 299`).
 - **A real HTTP server** — `/email-service` is an express app: `GET /order-shipped-email/:orderId?lang=fr`. Locales preload at boot; `resolve-locale.ts` adapts the request query onto `i18nPackage.resolve`; unsupported (`de`) and missing `?lang=` fall back to `en`.

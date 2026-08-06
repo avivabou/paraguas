@@ -1,12 +1,6 @@
-import {
-    createLocaleProxy,
-    demoLoadOptions,
-    type GetNestedValue,
-    type LocaleKeys,
-    type NestedPaths,
-} from '@demo/i18n';
+import { createLocaleProxy, type GetNestedValue, type LocaleKeys, type NestedPaths } from '@demo/i18n';
+import { demoLoadOptions, loadLocale } from '@demo/i18n/server';
 import { reactTokenRenderer } from 'paraguas/react';
-import { loadLocale } from 'paraguas/server';
 
 export type WebLocaleKeys = LocaleKeys<'web'>;
 export type WebLocalePaths = NestedPaths<WebLocaleKeys>;

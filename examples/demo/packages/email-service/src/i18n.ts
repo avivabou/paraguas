@@ -1,5 +1,5 @@
-import { demoLoadOptions, type LocaleKeys, type GetNestedValue, type NestedPaths, type SupportedLocale } from '@demo/i18n';
-import { loadTypedLocale, preloadTypedLocales } from 'paraguas/server';
+import type { GetNestedValue, LocaleKeys, NestedPaths, SupportedLocale } from '@demo/i18n';
+import { demoLoadOptions, loadTypedLocale, preloadTypedLocales } from '@demo/i18n/server';
 
 const RECIPE = 'emails';
 

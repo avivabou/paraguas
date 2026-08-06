@@ -103,7 +103,20 @@ texts.billing.retry({ code }, { readMore: (label) => <a href={url}>{label}</a> }
 
 The proxy turns property access into dotted key paths and calls your translate function — i18next in a web app, paraguas's own resolver on a server. When the trailing argument is a **wrapper record** (an object whose values are all functions), it is never forwarded to `t`; the resolved string is routed through the injected `renderTokens` instead. Wrappers without a configured renderer throw `MissingTokenRendererError`.
 
-`splitWithTokens(text, wrappers)` is the React-free core: `'See [x]docs[/x] now'` → `['See ', wrappers.x('docs'), ' now']`. A React consumer joins the parts with `createElement(Fragment, …)`; `stringTokenRenderer` joins them into a plain string (tests, emails, backends).
+`splitWithTokens(text, wrappers)` is the React-free core: `'See [x]docs[/x] now'` → `['See ', wrappers.x('docs'), ' now']`. `stringTokenRenderer` joins the parts into a plain string (tests, emails, backends).
+
+### `paraguas/react` — the React renderer
+
+React consumers don't hand-roll the join — `paraguas/react` ships it (React is an optional peer dependency; every other entry stays React-free):
+
+```tsx
+import { reactTokenRenderer } from 'paraguas/react';
+
+const texts = createLocaleProxy<MyKeys>(tFn, { renderTokens: reactTokenRenderer });
+texts.billing.retry({ code }, { readMore: (label) => <a href={url}>{label}</a> });
+```
+
+It interleaves literal text with wrapper outputs inside a keyed `Fragment` and returns a single `JSX.Element`.
 
 ### Embeds inside ICU plurals
 

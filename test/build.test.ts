@@ -3,7 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { build, validateAndMerge, ValidationError, type GenerateRequest } from '../src/builder/build';
-import { bracketTagStructure } from '../src/runtime/tokens';
+import { angleTagStructure } from '../src/runtime/tokens';
 
 let rootDir: string;
 let localesDir: string;
@@ -21,7 +21,7 @@ function baseConfig(recipes: Record<string, readonly string[]>) {
         distDir,
         languages: ['en', 'es'] as const,
         recipes,
-        structures: [bracketTagStructure],
+        structures: [angleTagStructure],
     };
 }
 
@@ -58,26 +58,26 @@ describe('validateAndMerge', () => {
     });
 
     it('throws when a token tag differs between languages', () => {
-        writeNamespace('en', 'ns1', { msg: 'Click [contactSupport]here[/contactSupport]' });
-        writeNamespace('es', 'ns1', { msg: 'Haz clic [contactSuport]aquí[/contactSuport]' });
+        writeNamespace('en', 'ns1', { msg: 'Click <contactSupport>here</contactSupport>' });
+        writeNamespace('es', 'ns1', { msg: 'Haz clic <contactSuport>aquí</contactSuport>' });
         expect(() => validateAndMerge(baseConfig({ app: ['ns1'] }))).toThrow(/contactSupport/);
     });
 
     it('throws when a token is missing from a translation', () => {
-        writeNamespace('en', 'ns1', { msg: 'See [readMore]more[/readMore]' });
+        writeNamespace('en', 'ns1', { msg: 'See <readMore>more</readMore>' });
         writeNamespace('es', 'ns1', { msg: 'Ver más' });
         expect(() => validateAndMerge(baseConfig({ app: ['ns1'] }))).toThrow(/readMore/);
     });
 
     it('throws on unpaired tokens', () => {
-        writeNamespace('en', 'ns1', { msg: 'See [readMore]more[/readMor]' });
-        writeNamespace('es', 'ns1', { msg: 'Ver [readMore]más[/readMore]' });
+        writeNamespace('en', 'ns1', { msg: 'See <readMore>more</readMor>' });
+        writeNamespace('es', 'ns1', { msg: 'Ver <readMore>más</readMore>' });
         expect(() => validateAndMerge(baseConfig({ app: ['ns1'] }))).toThrow(/unpaired/);
     });
 
     it('accepts matching tokens in different sentence positions', () => {
-        writeNamespace('en', 'ns1', { msg: '[readMore]Read more[/readMore] about {name}' });
-        writeNamespace('es', 'ns1', { msg: 'Sobre {name}, [readMore]leer más[/readMore]' });
+        writeNamespace('en', 'ns1', { msg: '<readMore>Read more</readMore> about {name}' });
+        writeNamespace('es', 'ns1', { msg: 'Sobre {name}, <readMore>leer más</readMore>' });
         expect(() => validateAndMerge(baseConfig({ app: ['ns1'] }))).not.toThrow();
     });
 
@@ -188,8 +188,8 @@ describe('orphan pruning', () => {
 
 describe('default codegen', () => {
     it('generates keys-weaver typed files when no generate fn is injected', async () => {
-        writeNamespace('en', 'banner', { greeting: 'Hi {name}!', cta: 'See [readMore]more[/readMore]' });
-        writeNamespace('es', 'banner', { greeting: '¡Hola {name}!', cta: 'Ver [readMore]más[/readMore]' });
+        writeNamespace('en', 'banner', { greeting: 'Hi {name}!', cta: 'See <readMore>more</readMore>' });
+        writeNamespace('es', 'banner', { greeting: '¡Hola {name}!', cta: 'Ver <readMore>más</readMore>' });
 
         const generatedDir = path.join(rootDir, 'generated');
         await build({ ...baseConfig({ app: ['banner'] }), generatedDir, codegen: { sortKeys: true } });
@@ -197,5 +197,19 @@ describe('default codegen', () => {
         const generated = fs.readFileSync(path.join(generatedDir, 'BannerKeys.ts'), 'utf-8');
         expect(generated).toContain("greeting: (data: DataFields<'name'>) => string;");
         expect(generated).toContain("cta: (embeds: EmbedFields<'readMore'>) => JSX.Element;");
+    });
+});
+
+describe('exclude list in validation', () => {
+    it('ignores basic HTML tags for parity and malformed checks', () => {
+        writeNamespace('en', 'ns1', { msg: 'Choose <i>mandatory</i> or <readMore>read</readMore>' });
+        writeNamespace('es', 'ns1', { msg: 'Elige <i>obligatorio</i> leer' });
+        expect(() => validateAndMerge(baseConfig({ app: ['ns1'] }))).toThrow(/readMore/);
+    });
+
+    it('accepts asymmetric basic HTML tags across languages', () => {
+        writeNamespace('en', 'ns1', { msg: 'Choose <i>mandatory</i>' });
+        writeNamespace('es', 'ns1', { msg: 'Elige mandatory' });
+        expect(() => validateAndMerge(baseConfig({ app: ['ns1'] }))).not.toThrow();
     });
 });

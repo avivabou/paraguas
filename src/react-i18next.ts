@@ -1,8 +1,16 @@
-import { useTranslation } from 'react-i18next';
+import { createElement, type ReactElement } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import type { i18n as I18n } from 'i18next';
-import { createLocaleProxy, type LocaleProxyOptions } from './runtime/locale-proxy';
+import { createLocaleProxy, type LocaleProxyOptions, type RenderKey } from './runtime/locale-proxy';
 import { getNestedValue } from './runtime/get-nested-value';
 import type { GetNestedValue, NestedPaths } from './runtime/locale-proxy';
+
+export const transRenderKey: RenderKey = (path, data, wrappers) =>
+    createElement(Trans, {
+        i18nKey: path,
+        values: data,
+        components: wrappers as Record<string, ReactElement>,
+    });
 
 export interface UseLocaleKeysResult<TKeys, P> {
     t: P extends string ? GetNestedValue<TKeys, P> : TKeys;
@@ -10,7 +18,7 @@ export interface UseLocaleKeysResult<TKeys, P> {
     ready: boolean;
 }
 
-export function createUseLocaleKeys<TKeys>(options: LocaleProxyOptions = {}) {
+export function createUseLocaleKeys<TKeys>(options: LocaleProxyOptions = { renderKey: transRenderKey }) {
     return function useLocaleKeys<P extends NestedPaths<TKeys> | undefined = undefined>(
         path?: P,
     ): UseLocaleKeysResult<TKeys, P> {

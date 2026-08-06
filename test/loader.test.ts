@@ -21,11 +21,11 @@ beforeEach(() => {
     fs.mkdirSync(path.join(distDir, 'app'), { recursive: true });
     fs.writeFileSync(
         path.join(distDir, 'app', 'en.json'),
-        JSON.stringify({ greeting: 'Hi {name}!', cta: 'Now [go]Go[/go]!', plain: 'Plain', onlyEn: 'EN' }),
+        JSON.stringify({ greeting: 'Hi {name}!', cta: 'Now <go>Go</go>!', plain: 'Plain', onlyEn: 'EN' }),
     );
     fs.writeFileSync(
         path.join(distDir, 'app', 'es.json'),
-        JSON.stringify({ greeting: '¡Hola {name}!', cta: '¡Ahora [go]Ve[/go]!', plain: 'Simple' }),
+        JSON.stringify({ greeting: '¡Hola {name}!', cta: '¡Ahora <go>Ve</go>!', plain: 'Simple' }),
     );
 });
 

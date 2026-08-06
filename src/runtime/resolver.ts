@@ -41,7 +41,7 @@ export function createTranslationResolver(options: CreateTranslationResolverOpti
             if (values == null) {
                 return template;
             }
-            const message = new IntlMessageFormat(template, locale);
+            const message = new IntlMessageFormat(template, locale, undefined, { ignoreTag: true });
             return message.format(values) as string;
         },
     };

@@ -54,3 +54,12 @@ describe('createTranslationResolver', () => {
         expect(resolver.t('a', { count: 1000000 })).toBe('1.000.000 días (many)');
     });
 });
+
+describe('angle tags under ICU', () => {
+    it('treats tags as literal text when formatting with values', () => {
+        const resolver = createTranslationResolver({
+            primary: { a: 'See <readMore>{name}</readMore> and <i>this</i>' },
+        });
+        expect(resolver.t('a', { name: 'Ada' })).toBe('See <readMore>Ada</readMore> and <i>this</i>');
+    });
+});

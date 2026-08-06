@@ -68,7 +68,11 @@ function getLeafValue(obj: unknown, leafPath: string): unknown {
 function getStructureTags(value: unknown, structure: TokenStructure): string[] {
     if (typeof value !== 'string') return [];
     const pattern = new RegExp(structure.pattern.source, structure.pattern.flags);
-    return [...value.matchAll(pattern)].map((match) => match[1] ?? '').sort();
+    const exclude = structure.exclude ?? [];
+    return [...value.matchAll(pattern)]
+        .map((match) => match[1] ?? '')
+        .filter((tag) => !exclude.includes(tag))
+        .sort();
 }
 
 function getMalformedTokens(value: unknown, structure: TokenStructure): string[] {
@@ -76,7 +80,10 @@ function getMalformedTokens(value: unknown, structure: TokenStructure): string[]
     const pattern = new RegExp(structure.pattern.source, structure.pattern.flags);
     const withoutPairs = value.replace(pattern, '');
     const malformedPattern = new RegExp(structure.malformedPattern.source, structure.malformedPattern.flags);
-    return [...withoutPairs.matchAll(malformedPattern)].map((match) => match[0]);
+    const exclude = structure.exclude ?? [];
+    return [...withoutPairs.matchAll(malformedPattern)]
+        .map((match) => match[0])
+        .filter((token) => !exclude.includes(token.replace(/[^\w]/g, '')));
 }
 
 function validateTokenParity({

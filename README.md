@@ -7,13 +7,13 @@
 **One typed translation package. Every consumer world.** React in the browser, Node services on the server — shared keys, shared types, build-time guarantees.
 
 ```tsx
-// "cta": "See [readMore]Read more[/readMore]"
+// "cta": "See <readMore>Read more</readMore>"
 
-texts.cart.cta({}, { readMore: (label) => <a href={url}>{label}</a> });  // ✅
+texts.cart.cta({}, { readMore: <a href={url}/> });  // ✅ chunk becomes the link text
 
 texts.cart.cta({});
 // ❌ tsc: Expected 2 arguments, but got 1 — the compiler won't let
-//    literal [readMore]…[/readMore] tags reach your users
+//    literal <readMore>…</readMore> tags reach your users
 ```
 
 paraguas is the *mechanism* for running i18n as a first-class package in a TypeScript monorepo: a recipe-based build pipeline, a typed runtime proxy with embedded-component rendering, and a server-side loader. Your project owns the locale JSONs, the recipe definitions, and the generated types; paraguas owns validation, merging, codegen orchestration, and runtime resolution. It bundles [keys-weaver](https://github.com/avivabou/keys-weaver) as its default type generator.
@@ -32,7 +32,7 @@ The fix is structural: make the translation package a dependency any TypeScript 
 
 - **Namespace** — one locale JSON file per language (`locales/en/catalog.json`, `locales/fr/catalog.json`). Nested JSON, ICU MessageFormat values.
 - **Recipe** — a named subset of namespaces, deep-merged at build time into one bundle per consumer per language (`dist/<recipe>/<lang>.json`). The web app takes all namespaces; the email service takes only what it renders.
-- **Token structure** — a pattern for tokens inside translation values. The built-in `bracketTagStructure` matches `[tag]label[/tag]` pairs used to embed components (links, buttons) inside copy.
+- **Token structure** — a pattern for tokens inside translation values. The built-in `angleTagStructure` matches `<tag>label</tag>` pairs (HTML/ICU-style; basic HTML tags `br`/`strong`/`i`/`p` are excluded by default) used to embed components (links, buttons) inside copy.
 
 ```
 locales/                         dist/                     (per recipe × language)
@@ -72,7 +72,7 @@ The `web` bundle's `shop.actions.buttons` has all four leaves; the `emails` bund
 ## `paraguas/build` — the pipeline
 
 ```ts
-import { build, bracketTagStructure } from 'paraguas/build';
+import { build, angleTagStructure } from 'paraguas/build';
 
 await build({
     localesDir: 'locales',
@@ -80,7 +80,7 @@ await build({
     generatedDir: 'src/generated',
     languages: ['en', 'fr'],
     recipes: { web: ['catalog', 'cart', 'common'], emails: ['emails', 'common'] },
-    structures: [bracketTagStructure],
+    structures: [angleTagStructure],
     codegen: { layout: 'single-file', sortKeys: true, emitFactory: false },
 });
 ```
@@ -105,8 +105,8 @@ await build({
 | Field | Type | Description |
 | --- | --- | --- |
 | `id` | `string` | Name used in error messages (`unpaired embed token(s)…`) |
-| `pattern` | `RegExp` | Global regex; capture group 1 = token name, group 2 = label. `bracketTagStructure` = `/\[(\w+)\](.*?)\[\/\1\]/g` |
-| `malformedPattern` | `RegExp?` | Detects leftovers after well-formed pairs are stripped (`/\[\/?\w+\]/g` for brackets) — catches `[readMore]…[/readMor]` typos |
+| `pattern` | `RegExp` | Global regex; capture group 1 = token name, group 2 = label. `angleTagStructure` = `/<(\w+)>(.*?)<\/\1>/g` |
+| `malformedPattern` | `RegExp?` | Detects leftovers after well-formed pairs are stripped (`/<\/?\w+>/g`) — catches `<readMore>…</readMor>` typos |
 
 ### Pipeline order — every run
 
@@ -136,7 +136,7 @@ The proxy turns property access into dotted key paths and calls `t`. When the tr
 
 ```ts
 texts.cart.summary({ count: 3 });                                   // plain ICU key → string
-texts.cart.emptyHint({ }, { browse: (label) => <a href="/">{label}</a> }); // embed key → element
+texts.cart.emptyHint({}, { browse: <a href="/"/> });                      // embed key → element
 ```
 
 ### Token helpers
@@ -145,7 +145,7 @@ texts.cart.emptyHint({ }, { browse: (label) => <a href="/">{label}</a> }); // em
 | --- | --- | --- |
 | `splitWithTokens` | `(text, wrappers, structure?) => Array<string \| T>` | The React-free split/interleave core — build custom renderers on it |
 | `stringTokenRenderer` | `TokenRenderer<string>` | Joins parts into a plain string — emails, logs, string-only tests |
-| `bracketTagStructure` | `TokenStructure` | The `[tag]label[/tag]` pattern, shared by build validation and runtime |
+| `angleTagStructure` | `TokenStructure` | The `<tag>label</tag>` pattern, shared by build validation and runtime |
 
 ### `resolveLocale(raw, locales, localeSet)`
 
@@ -178,25 +178,39 @@ The one-call glue for a consumer monorepo's i18n package — returns everything 
 | `DeepMerge<[A, B, …]>` | The type-level twin of the build-time merge |
 | `LocaleKeysFor<Pkg, TypeMap, R>` | `LocaleKeysOf` keyed off a `defineLocalePackage` object |
 
-## `paraguas/react` — the React renderer
+## `paraguas/react-i18next` — the `<Trans>` seam (recommended for i18next apps)
 
-React is an optional peer dependency; every other entry stays React-free.
+Tagged keys render through react-i18next's `<Trans>` components mapping — the translated chunk becomes the element's children (react/react-i18next/i18next are optional peers):
+
+```tsx
+import { transRenderKey, createUseLocaleKeys } from 'paraguas/react-i18next';
+
+export const useTexts = createUseLocaleKeys<WebKeys>({ renderKey: transRenderKey });
+
+texts.cart.cta({}, { readMore: <a href={url}/> });
+// → <Trans i18nKey="cart.cta" components={{ readMore: <a href={url}/> }} />
+```
+
+With `renderKey`, the proxy delegates the whole call — Trans resolves via `t()` (ICU formats first; i18next-icu ships `ignoreTag: true`, so tags survive as literal text), then substitutes tags with your elements. Basic HTML tags (`<i>`, `<strong>`, `<br/>`, `<p>`) render natively and are excluded from detection and typing.
+
+## `paraguas/react` — renderer without i18next
+
+For bare-React consumers, `reactTokenRenderer` splits the resolved text itself and clones your elements with the chunk as children:
 
 ```tsx
 import { reactTokenRenderer } from 'paraguas/react';
 
 const texts = createLocaleProxy<WebKeys>(tFn, { renderTokens: reactTokenRenderer });
+texts.cart.cta({}, { readMore: <a href={url}/> });
 ```
-
-Interleaves literal text with wrapper outputs inside a keyed `Fragment`, returns one `JSX.Element`.
 
 ### Embeds inside ICU plurals
 
-Tags compose with ICU plural/select because ICU resolves **first** (branch selected, `#` substituted — brackets are plain text to ICU), then the surviving branch's tags render:
+Tags compose with ICU plural/select because ICU resolves **first** (branch selected, `#` substituted — angle tags are literal text to ICU), then the surviving branch's tags render:
 
 ```ts
-// "{count, plural, one {[undo]Undo # item[/undo]} other {# items — [undo]undo all[/undo]}}"
-texts.cart.removed({ count: 1 }, { undo: (label) => <button>{label}</button> });
+// "{count, plural, one {<undo>Undo # item</undo>} other {# items — <undo>undo all</undo>}}"
+texts.cart.removed({ count: 1 }, { undo: <button/> });
 ```
 
 ## `paraguas/server` — the loader
@@ -266,7 +280,7 @@ The build call binds the same package object:
 
 ```ts
 // packages/my-i18n/src/build.ts
-await build({ localesDir, distDir, generatedDir, ...i18nPackage, structures: [bracketTagStructure] });
+await build({ localesDir, distDir, generatedDir, ...i18nPackage, structures: [angleTagStructure] });
 ```
 
 ### Frontend (React + i18next)
@@ -286,7 +300,7 @@ export const useTexts = createUseLocaleKeys<WebKeys>({ renderTokens: reactTokenR
 const { t: texts } = useTexts();
 
 <p>{texts.cart.summary({ count: items.length })}</p>
-<p>{texts.cart.emptyHint({}, { browse: (label) => <Link to="/catalog">{label}</Link> })}</p>
+<p>{texts.cart.emptyHint({}, { browse: <Link to="/catalog"/> })}</p>
 ```
 
 i18next loads `my-i18n/dist/web/<lang>.json` (bundle it in dev, fetch it lazily in prod) — paraguas doesn't care how the bundle reaches i18next.

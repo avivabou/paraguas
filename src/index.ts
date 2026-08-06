@@ -2,6 +2,7 @@ export {
     createLocaleProxy,
     MissingTokenRendererError,
     type LocaleProxyOptions,
+    type RenderKey,
     type Translate,
     type NestedPaths,
     type GetNestedValue,
@@ -9,7 +10,8 @@ export {
 export {
     splitWithTokens,
     stringTokenRenderer,
-    bracketTagStructure,
+    angleTagStructure,
+    BASIC_HTML_TAGS,
     type TokenStructure,
     type TokenWrappers,
     type TokenRenderer,

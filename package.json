@@ -1,6 +1,6 @@
 {
   "name": "paraguas",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Generic i18n mechanism: recipe-based locale build pipeline, typed runtime proxy with embedded-component rendering, and a server-side loader",
   "license": "MIT",
   "author": "avivabou",
@@ -63,22 +63,22 @@
   },
   "dependencies": {
     "intl-messageformat": "^11.2.4",
-    "keys-weaver": "^0.1.0"
+    "keys-weaver": "^0.2.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "@types/react": "^18.3.0",
+    "i18next": "^23.16.0",
+    "react": "^18.3.0",
+    "react-i18next": "^15.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^2.1.0",
-    "react": "^18.3.0",
-    "@types/react": "^18.3.0",
-    "react-i18next": "^15.0.0",
-    "i18next": "^23.16.0"
+    "vitest": "^2.1.0"
   },
   "peerDependencies": {
+    "i18next": ">=23",
     "react": ">=17",
-    "react-i18next": ">=13",
-    "i18next": ">=23"
+    "react-i18next": ">=13"
   },
   "peerDependenciesMeta": {
     "react": {

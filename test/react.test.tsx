@@ -11,7 +11,7 @@ function collectText(node: ReactNode): string {
 
 describe('reactTokenRenderer', () => {
     it('interleaves text and wrapped elements inside a fragment', () => {
-        const result = reactTokenRenderer('Go [x]here[/x] now', {
+        const result = reactTokenRenderer('Go <x>here</x> now', {
             x: (label) => <strong>{label}</strong>,
         });
 
@@ -34,7 +34,7 @@ describe('reactTokenRenderer', () => {
     });
 
     it('renders plain labels for missing wrappers', () => {
-        const result = reactTokenRenderer('Click [missing]here[/missing].', {});
+        const result = reactTokenRenderer('Click <missing>here</missing>.', {});
         expect(collectText(result)).toBe('Click here.');
     });
 });

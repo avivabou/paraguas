@@ -1,6 +1,6 @@
 {
   "name": "paraguas",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Generic i18n mechanism: recipe-based locale build pipeline, typed runtime proxy with embedded-component rendering, and a server-side loader",
   "license": "MIT",
   "author": "avivabou",
@@ -75,5 +75,8 @@
     "react": {
       "optional": true
     }
+  },
+  "bin": {
+    "paraguas-merge-locales": "dist/merge-driver-cli.cjs"
   }
 }

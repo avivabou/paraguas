@@ -222,6 +222,21 @@ Don't mock the i18n layer — the real loader catches copy bugs that mocks hide.
 | Build time | Missing namespace file, leaf-path collision, key-parity drift, unpaired/renamed embed tags — all `ValidationError`s |
 | Runtime | Requested-language miss falls back to the reference language; miss in both throws `TranslationKeyError`; unsupported locale input falls back to the default |
 
+## `paraguas-merge-locales` — git merge driver
+
+Locale JSONs conflict constantly on busy branches. The shipped CLI resolves them semantically — one side changed a key → take it; both made the same change → keep it; both changed it differently → fail as a real conflict:
+
+```
+# .gitattributes
+locales/**/*.json merge=locale-json
+
+# register the driver
+git config merge.locale-json.driver 'paraguas-merge-locales --driver %O %A %B'
+
+# or fix a file that already has conflict markers
+paraguas-merge-locales --resolve locales/en/billing.json
+```
+
 ## License
 
 MIT

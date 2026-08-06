@@ -226,21 +226,17 @@ export { SUPPORTED_LOCALES, DEFAULT_LOCALE, isSupportedLocale } from './locales'
 
 ```tsx
 // web/src/i18n.ts
-import { createLocaleProxy, type LocaleKeys } from 'my-i18n';
+import type { LocaleKeys } from 'my-i18n';
+import { createUseLocaleKeys } from 'paraguas/react-i18next';
 import { reactTokenRenderer } from 'paraguas/react';
-import { useTranslation } from 'react-i18next';
 
 export type WebKeys = LocaleKeys<'web'>;
-
-export function useTexts(): WebKeys {
-    const { i18n } = useTranslation();
-    return createLocaleProxy<WebKeys>(i18n.t.bind(i18n), { renderTokens: reactTokenRenderer });
-}
+export const useTexts = createUseLocaleKeys<WebKeys>({ renderTokens: reactTokenRenderer });
 ```
 
 ```tsx
 // web/src/cart/CartBanner.tsx
-const texts = useTexts();
+const { t: texts } = useTexts();
 
 <p>{texts.cart.summary({ count: items.length })}</p>
 <p>{texts.cart.emptyHint({}, { browse: (label) => <Link to="/catalog">{label}</Link> })}</p>
@@ -312,8 +308,8 @@ import { reactTokenRenderer } from 'paraguas/react';
 
 export const useTexts = createUseLocaleKeys<WebKeys>({ renderTokens: reactTokenRenderer });
 
-const texts = useTexts();                    // whole tree
-const { t } = useTexts('shop.actions');     // typed namespace slice
+const { t: texts } = useTexts();               // whole tree
+const { t: actions } = useTexts('shop.actions'); // typed namespace slice
 ```
 
 The hook returns `{ t, i18n, ready }`; `getNestedValue` (exported from the main entry) is the runtime twin of the `GetNestedValue` type if you slice manually.

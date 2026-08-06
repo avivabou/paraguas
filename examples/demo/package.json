@@ -1,0 +1,17 @@
+{
+  "name": "paraguas-demo",
+  "private": true,
+  "scripts": {
+    "build": "tsx src/build.ts",
+    "demo": "tsx src/demo.ts",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && npm run demo && npm run typecheck"
+  },
+  "dependencies": {
+    "paraguas": "latest"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

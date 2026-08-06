@@ -1,6 +1,20 @@
 # paraguas
 
+[![npm](https://img.shields.io/npm/v/paraguas)](https://www.npmjs.com/package/paraguas)
+[![CI](https://github.com/avivabou/paraguas/actions/workflows/ci.yml/badge.svg)](https://github.com/avivabou/paraguas/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/paraguas)](./LICENSE)
+
 **One typed translation package. Every consumer world.** React in the browser, Node services on the server — shared keys, shared types, build-time guarantees.
+
+```tsx
+// "cta": "See [readMore]Read more[/readMore]"
+
+texts.cart.cta({}, { readMore: (label) => <a href={url}>{label}</a> });  // ✅
+
+texts.cart.cta({});
+// ❌ tsc: Expected 2 arguments, but got 1 — the compiler won't let
+//    literal [readMore]…[/readMore] tags reach your users
+```
 
 paraguas is the *mechanism* for running i18n as a first-class package in a TypeScript monorepo: a recipe-based build pipeline, a typed runtime proxy with embedded-component rendering, and a server-side loader. Your project owns the locale JSONs, the recipe definitions, and the generated types; paraguas owns validation, merging, codegen orchestration, and runtime resolution. It bundles [keys-weaver](https://github.com/avivabou/keys-weaver) as its default type generator.
 
@@ -357,6 +371,22 @@ function fmt(t: EmailKeys) { … }
 // ✅ the slice it needs, via the alias defined once in the glue package
 function fmt(t: EmailTexts<'emails.orderShipped'>) { … }
 ```
+
+## How it compares
+
+Different tools optimize for different things — this is where paraguas + keys-weaver sit:
+
+| | paraguas + keys-weaver | i18next (+ react-i18next) | typesafe-i18n | Lingui |
+| --- | --- | --- | --- | --- |
+| Typed key paths | ✅ generated per namespace | ⚠️ via manual type augmentation | ✅ | ⚠️ ids are strings |
+| Typed ICU params per key | ✅ required function args | ⚠️ partial | ✅ | ❌ runtime |
+| **Compile-enforced embedded components** | ✅ per-key wrapper args | ❌ `<Trans>` is untyped per key | ❌ | ❌ `<Trans>` is untyped per key |
+| Node services from the same keys | ✅ first-class loader | ⚠️ possible, DIY | ⚠️ | ⚠️ react-centric |
+| Per-consumer bundles (recipes) | ✅ | ❌ | ❌ | ❌ |
+| Locale-JSON git merge driver | ✅ shipped CLI | ❌ | ❌ | ❌ |
+| Runtime framework | bring your own (works *with* i18next) | i18next | own | own |
+
+paraguas is a *mechanism*, not a runtime replacement — the recommended frontend setup runs **on top of** i18next and adds the typing, recipes, and embed enforcement it lacks.
 
 ## Guarantees at a glance
 

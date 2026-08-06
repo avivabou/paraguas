@@ -2,7 +2,7 @@
 
 **One typed translation package. Every consumer world.** React in the browser, Node services on the server — shared keys, shared types, build-time guarantees.
 
-paraguas is the *mechanism* for running i18n as a first-class package in a TypeScript monorepo: a recipe-based build pipeline, a typed runtime proxy with embedded-component rendering, and a server-side loader. Your project owns the locale JSONs, the recipe definitions, and the generated types; paraguas owns validation, merging, codegen orchestration, and runtime resolution. Pair it with a codegen package such as [keys-weaver](https://github.com/avivabou/keys-weaver) for per-key typed functions.
+paraguas is the *mechanism* for running i18n as a first-class package in a TypeScript monorepo: a recipe-based build pipeline, a typed runtime proxy with embedded-component rendering, and a server-side loader. Your project owns the locale JSONs, the recipe definitions, and the generated types; paraguas owns validation, merging, codegen orchestration, and runtime resolution. It bundles [keys-weaver](https://github.com/avivabou/keys-weaver) as its default type generator.
 
 ```
 npm install paraguas
@@ -10,79 +10,100 @@ npm install paraguas
 
 ## The problem it solves
 
-Translations usually live in one place: the frontend. Then PDFs, emails, CSV error messages, and scheduled jobs start leaking user-facing copy back into TypeScript string literals. Second-language coverage drifts. Nobody can review server-rendered output. CI can't catch missing keys outside the web app.
+Translations usually live in one place: the frontend. Then transactional emails, PDFs, CSV error messages, and scheduled jobs start leaking user-facing copy back into TypeScript string literals. Second-language coverage drifts. Nobody can review server-rendered output. CI can't catch missing keys outside the web app.
 
-The fix is structural: make the translation package a dependency any TypeScript code can consume — same typed key inference, same ICU support, same locale files — whether it renders React in a browser or a PDF on a server.
+The fix is structural: make the translation package a dependency any TypeScript code can consume — same typed key inference, same ICU support, same locale files — whether it renders React in a browser or an email on a server.
 
 ## Concepts
 
-- **Namespace** — one locale JSON file per language (`locales/en/billing.json`, `locales/es/billing.json`). Nested JSON, ICU MessageFormat values.
-- **Recipe** — a named subset of namespaces, deep-merged at build time into one bundle per consumer per language (`dist/<recipe>/<lang>.json`). The web app takes all namespaces; a PDF service takes only what it renders.
+- **Namespace** — one locale JSON file per language (`locales/en/catalog.json`, `locales/fr/catalog.json`). Nested JSON, ICU MessageFormat values.
+- **Recipe** — a named subset of namespaces, deep-merged at build time into one bundle per consumer per language (`dist/<recipe>/<lang>.json`). The web app takes all namespaces; the email service takes only what it renders.
 - **Token structure** — a pattern for tokens inside translation values. The built-in `bracketTagStructure` matches `[tag]label[/tag]` pairs used to embed components (links, buttons) inside copy.
 
 ```
 locales/                         dist/                     (per recipe × language)
 ├── en/                          ├── web/
-│   ├── billing.json      →      │   ├── en.json
-│   ├── checkout.json     →      │   └── es.json
-│   └── receipt.json      →      └── pdf/
-└── es/  (mirror of en/)             ├── en.json
-                                     └── es.json
+│   ├── catalog.json      →      │   ├── en.json
+│   ├── cart.json         →      │   └── fr.json
+│   ├── emails.json       →      └── emails/
+│   └── common.json       →          ├── en.json
+└── fr/  (mirror of en/)             └── fr.json
 
-recipes: { web: ['billing', 'checkout'], pdf: ['billing', 'receipt'] }
+recipes: { web: ['catalog', 'cart', 'common'], emails: ['emails', 'common'] }
 ```
 
 ### Why recipes?
 
-The PDF service never renders the checkout wizard; the web app never renders a receipt. Each consumer pulls only the namespaces it needs — smaller bundles, narrower types. And when the same namespace is in both recipes, copy on screen ≡ copy in the PDF, guaranteed by sharing the source file.
+The email service never renders the product catalog; the web app never renders an order-confirmation email. Each consumer pulls only the namespaces it needs — smaller bundles, narrower types. And when the same namespace is in both recipes (`common`), copy on screen ≡ copy in the email, guaranteed by sharing the source file.
 
-`LocaleKeys` types follow the recipe: the merged type for `pdf` literally does not contain the checkout tree, so referencing it is a compile error — not a runtime miss.
+`LocaleKeysOf` types follow the recipe: the merged type for `emails` literally does not contain the catalog tree, so referencing it is a compile error — not a runtime miss.
 
 ### Deep-merge mechanics
 
-Two namespaces may contribute to the same parent branch. Say `commonButtons.json` (web-only) and `commonText.json` (shared) both root at `common.actions`:
+Two namespaces may contribute to the same parent branch. Say `cart.json` (web-only) and `common.json` (shared) both root at `shop.actions`:
 
 ```jsonc
-// commonButtons.json (web recipe only)          // commonText.json (web + pdf)
-{ "common": { "actions": {                       { "common": { "actions": {
+// cart.json (web recipe only)                   // common.json (web + emails)
+{ "shop": { "actions": {                         { "shop": { "actions": {
     "buttons": {                                     "buttons": {
-      "save": "Save",                                  "approve": "Approve",
-      "cancel": "Cancel"                               "decline": "Decline"
+      "addToCart": "Add to cart",                      "viewOrder": "View order",
+      "clear": "Clear"                                 "trackShipment": "Track shipment"
     }                                                },
-} } }                                                "status": { "approved": "Approved" }
+} } }                                                "status": { "shipped": "Shipped" }
                                                  } } }
 ```
 
-The `web` bundle's `common.actions.buttons` has all four leaves; the `pdf` bundle only `approve`/`decline`. Shared parents merge; **leaves must have exactly one owner** — if two namespaces define the same leaf path, the build fails naming both owners.
+The `web` bundle's `shop.actions.buttons` has all four leaves; the `emails` bundle only `viewOrder`/`trackShipment`. Shared parents merge; **leaves must have exactly one owner** — if two namespaces define the same leaf path, the build fails naming both owners.
 
 ## `paraguas/build` — the pipeline
 
 ```ts
 import { build, bracketTagStructure } from 'paraguas/build';
-import { generate } from 'keys-weaver';
 
 await build({
     localesDir: 'locales',
     distDir: 'dist',
     generatedDir: 'src/generated',
-    languages: ['en', 'es'],                 // languages[0] is the reference language
-    recipes: { web: ['billing', 'checkout'], pdf: ['billing', 'receipt'] },
+    languages: ['en', 'fr'],
+    recipes: { web: ['catalog', 'cart', 'common'], emails: ['emails', 'common'] },
     structures: [bracketTagStructure],
-    generate: ({ source, output, functionName }) =>
-        generate({ source, output, functionName, layout: 'per-node', sortKeys: true }),
+    codegen: { layout: 'single-file', sortKeys: true, emitFactory: false },
 });
 ```
 
-Pipeline order — every run:
+### `build(config, extras?)` parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `localesDir` | `string` | ✅ | Root of the locale sources; expects `<localesDir>/<lang>/<namespace>.json` |
+| `distDir` | `string` | ✅ | Output root for merged bundles: `<distDir>/<recipe>/<lang>.json` |
+| `languages` | `readonly string[]` | ✅ | All languages; **`languages[0]` is the reference language** — every other language is validated against it, and it is the fallback source |
+| `recipes` | `Record<string, readonly string[]>` | ✅ | Recipe name → ordered namespace list. Order matters only for merge precedence of shared parents |
+| `generatedDir` | `string` | — | Where generated key types + `namespace-type-map.ts` go. Omit to skip codegen entirely |
+| `structures` | `TokenStructure[]` | — | Token structures to **validate** cross-language (see below). Default: none |
+| `codegen` | `Omit<GenerateOptions, 'source' \| 'output' \| 'functionName'>` | — | Passthrough to the bundled keys-weaver generator: `layout` (`'single-file'` \| `'per-node'`), `sortKeys`, `emitFactory`, `comments`, `banner`, `structures` |
+| `generate` | `(req: { source, output, functionName }) => Promise \| unknown` | — | Replace the bundled generator entirely (custom codegen). When set, `codegen` is ignored |
+| `functionNameFor` | `(namespace: string) => string` | — | Generated type/file base name per namespace. Default: PascalCase + `Keys` (`order-emails` → `OrderEmailsKeys`) |
+| `extras.typeMapTypeParams` | `string[]` | — | Generic params for `namespace-type-map.ts` when a custom generator emits generic types. Unnecessary with the bundled generator |
+
+### `TokenStructure` (validation-side)
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `id` | `string` | Name used in error messages (`unpaired embed token(s)…`) |
+| `pattern` | `RegExp` | Global regex; capture group 1 = token name, group 2 = label. `bracketTagStructure` = `/\[(\w+)\](.*?)\[\/\1\]/g` |
+| `malformedPattern` | `RegExp?` | Detects leftovers after well-formed pairs are stripped (`/\[\/?\w+\]/g` for brackets) — catches `[readMore]…[/readMor]` typos |
+
+### Pipeline order — every run
 
 1. **Validate** — refuses to ship a drifted bundle:
    - every namespace file exists in every language;
    - no leaf-path collisions across namespaces (each leaf has one owner);
-   - key parity between the reference language and every other (`Missing in es: …` / `Extra in es: …` — no half-translations);
-   - token parity per structure: unpaired tags (`[readMore]…[/readMor]`) and cross-language tag mismatches are build errors — a translation can move a tag to a different sentence position, but never drop or rename it.
+   - key parity between the reference language and every other (`Missing in fr: …` / `Extra in fr: …` — no half-translations);
+   - token parity per structure: unpaired tags and cross-language tag mismatches are build errors — a translation can move a tag to a different sentence position, but never drop or rename it.
 2. **Merge** — deep-merge each recipe's namespaces, sort keys deterministically, write `dist/<recipe>/<lang>.json`.
-3. **Codegen** — call the injected `generate` once per namespace, in-process (no CLI process spawning), then emit `namespace-type-map.ts` mapping namespace names to generated types.
-4. **Prune** — delete generated files whose namespace no longer exists (no stale types surviving a namespace removal).
+3. **Codegen** — generate typed key functions per namespace, in-process (no CLI spawning), then emit `namespace-type-map.ts`.
+4. **Prune** — delete generated files whose namespace no longer exists.
 
 All validation failures throw one `ValidationError` listing every mismatch. Typical wiring: run on `postinstall` and in CI so `dist/` is always fresh and PR diffs show the merged output.
 
@@ -90,98 +111,196 @@ All validation failures throw one `ValidationError` listing every mismatch. Typi
 
 Browser-safe entry: types, the proxy, token rendering, locale guards. No filesystem access.
 
-```ts
-import { createLocaleProxy, splitWithTokens, stringTokenRenderer } from 'paraguas';
+### `createLocaleProxy<T>(t, options?)`
 
-const texts = createLocaleProxy<MyKeys>((key, values) => i18n.t(key, values), {
-    renderTokens: (text, wrappers) => renderMyWay(splitWithTokens(text, wrappers)),
-});
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `t` | `(key: string, values?: Record<string, unknown>) => string` | Your translate function — i18next's `t` in a web app, paraguas's own resolver on a server |
+| `options.renderTokens` | `TokenRenderer?` | Renderer invoked when a call passes embed wrappers. Omit it and any wrappers call throws `MissingTokenRendererError` |
 
-texts.billing.greeting({ name: 'Ada' });                       // 'Hi Ada!'
-texts.billing.retry({ code }, { readMore: (label) => <a href={url}>{label}</a> });
-```
-
-The proxy turns property access into dotted key paths and calls your translate function — i18next in a web app, paraguas's own resolver on a server. When the trailing argument is a **wrapper record** (an object whose values are all functions), it is never forwarded to `t`; the resolved string is routed through the injected `renderTokens` instead. Wrappers without a configured renderer throw `MissingTokenRendererError`.
-
-`splitWithTokens(text, wrappers)` is the React-free core: `'See [x]docs[/x] now'` → `['See ', wrappers.x('docs'), ' now']`. `stringTokenRenderer` joins the parts into a plain string (tests, emails, backends).
-
-### `paraguas/react` — the React renderer
-
-React consumers don't hand-roll the join — `paraguas/react` ships it (React is an optional peer dependency; every other entry stays React-free):
-
-```tsx
-import { reactTokenRenderer } from 'paraguas/react';
-
-const texts = createLocaleProxy<MyKeys>(tFn, { renderTokens: reactTokenRenderer });
-texts.billing.retry({ code }, { readMore: (label) => <a href={url}>{label}</a> });
-```
-
-It interleaves literal text with wrapper outputs inside a keyed `Fragment` and returns a single `JSX.Element`.
-
-### Embeds inside ICU plurals
-
-Token tags compose with ICU plural/select because of the resolution order: ICU resolves **first** (branch selected, `#` substituted — brackets are plain text to ICU), then the surviving branch's tags are rendered:
+The proxy turns property access into dotted key paths and calls `t`. When the trailing argument is a **wrapper record** (an object whose values are all functions), it is never forwarded to `t`; the resolved string is routed through `renderTokens` instead.
 
 ```ts
-const resolver = createTranslationResolver({
-    primary: { items: '{count, plural, one {[undo]Undo # item[/undo]} other {# items — [undo]undo all[/undo]}}' },
-});
-const texts = createLocaleProxy<ItemsKeys>((key, values) => resolver.t(key, values), {
-    renderTokens: stringTokenRenderer,
-});
-
-texts.items({ count: 1 }, { undo: (label) => `<${label}>` }); // '<Undo 1 item>'
-texts.items({ count: 3 }, { undo: (label) => `<${label}>` }); // '3 items — <undo all>'
+texts.cart.summary({ count: 3 });                                   // plain ICU key → string
+texts.cart.emptyHint({ }, { browse: (label) => <a href="/">{label}</a> }); // embed key → element
 ```
+
+### Token helpers
+
+| Export | Signature | Use |
+| --- | --- | --- |
+| `splitWithTokens` | `(text, wrappers, structure?) => Array<string \| T>` | The React-free split/interleave core — build custom renderers on it |
+| `stringTokenRenderer` | `TokenRenderer<string>` | Joins parts into a plain string — emails, logs, string-only tests |
+| `bracketTagStructure` | `TokenStructure` | The `[tag]label[/tag]` pattern, shared by build validation and runtime |
+
+### `resolveLocale(raw, locales, localeSet)`
+
+Per-request pick from a preloaded map: accepts anything (query param, header, stored preference); non-string or unsupported input falls back to `DEFAULT_LOCALE`; a supported-but-not-preloaded locale throws `LocaleNotPreloadedError`.
+
+### `createLocaleSet(locales)`
+
+`createLocaleSet(['en', 'fr'] as const)` → `{ SUPPORTED_LOCALES, DEFAULT_LOCALE, isSupportedLocale }` as one typed unit. `DEFAULT_LOCALE` is the first entry.
 
 ### Type utilities
 
 | Utility | What it gives you |
 | --- | --- |
-| `LocaleKeysOf<Recipes, TypeMap, R>` | The deeply-merged translation type for a recipe — `LocaleKeysOf<…, 'pdf'>` ≠ `LocaleKeysOf<…, 'web'>`; extra namespaces simply don't exist in the narrower type |
-| `NestedPaths<T>` | Union of every dotted key path — autocomplete on `'common.buttons.approve' \| …` |
-| `GetNestedValue<T, Path>` | The value type at a path — use it to hand helpers a **namespace slice** (`GetNestedValue<PdfKeys, 'billing'>`) instead of the whole tree |
+| `LocaleKeysOf<Recipes, TypeMap, R>` | The deeply-merged translation type for a recipe |
+| `NestedPaths<T>` | Union of every dotted key path — autocomplete on `'shop.actions.buttons.viewOrder' \| …` |
+| `GetNestedValue<T, Path>` | The value type at a path — hand helpers a **namespace slice** instead of the whole tree |
 | `DeepMerge<[A, B, …]>` | The type-level twin of the build-time merge |
-| `createLocaleSet(['en', 'es'])` | `SUPPORTED_LOCALES`, `DEFAULT_LOCALE`, `isSupportedLocale` guard, as one typed unit |
 
-With a codegen like keys-weaver in front, every leaf is a typed function: unknown key → `tsc` error; forgotten ICU param → `tsc` error; renaming a key → compile error in every consumer; embed-tagged key called without wrappers → compile error.
+## `paraguas/react` — the React renderer
+
+React is an optional peer dependency; every other entry stays React-free.
+
+```tsx
+import { reactTokenRenderer } from 'paraguas/react';
+
+const texts = createLocaleProxy<WebKeys>(tFn, { renderTokens: reactTokenRenderer });
+```
+
+Interleaves literal text with wrapper outputs inside a keyed `Fragment`, returns one `JSX.Element`.
+
+### Embeds inside ICU plurals
+
+Tags compose with ICU plural/select because ICU resolves **first** (branch selected, `#` substituted — brackets are plain text to ICU), then the surviving branch's tags render:
+
+```ts
+// "{count, plural, one {[undo]Undo # item[/undo]} other {# items — [undo]undo all[/undo]}}"
+texts.cart.removed({ count: 1 }, { undo: (label) => <button>{label}</button> });
+```
 
 ## `paraguas/server` — the loader
 
 Node-only entry: filesystem loaders reading the pre-built recipe bundles. No HTTP, no React.
 
-```ts
-import { preloadTypedLocales, resolveLocale } from 'paraguas/server';
-import { createLocaleSet } from 'paraguas';
+### Loader functions
 
-const localeSet = createLocaleSet(['en', 'es'] as const);
+| Function | Returns | Use |
+| --- | --- | --- |
+| `loadTypedLocale<T>(recipe, lang, options)` | `T` | One typed proxy for one recipe × language |
+| `preloadTypedLocales<T>(recipe, options)` | `Map<string, T>` | One proxy per language — call once at boot |
+| `loadLocale(recipe, lang, options)` | `TranslationResolver` | Lower-level: the raw `t(key, values?)` resolver |
+| `preloadLocales(recipe, options)` | `Map<string, TranslationResolver>` | All languages as raw resolvers |
 
-// boot — once per process; all locales held in memory
-const locales = preloadTypedLocales<PdfKeys>('pdf', { distDir, languages: localeSet.SUPPORTED_LOCALES });
+### `LoadOptions`
 
-// per request — O(1) pick with fallback to the default locale
-const { t, lang } = resolveLocale(req.query.lang, locales, localeSet);
-return renderPdf(<Receipt t={t} />);
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `distDir` | `string` | ✅ | Where the built bundles live — explicit so tests can point at fixtures |
+| `languages` | `readonly string[]` | ✅ | Languages to accept/preload; `languages[0]` is the fallback source unless overridden |
+| `fallbackLanguage` | `string?` | — | Override the fallback source language |
+| `proxy` | `LocaleProxyOptions?` | — | Options for the typed proxy — e.g. `{ renderTokens: stringTokenRenderer }` for services that render embeds into strings |
+
+Semantics: ICU resolves via `intl-messageformat` **with the requested locale's plural and formatting rules** (French output gets French plural categories and number grouping). A key missing in the requested language falls back to the reference language; missing in both throws `TranslationKeyError`. No hot-reload by design — language is a request-time decision over a boot-time preload.
+
+## Best practice — full setup
+
+Monorepo layout: one internal package owns the locale content; every consumer depends on it.
+
+```
+packages/my-i18n/
+├── locales/{en,fr}/{catalog,cart,emails,common}.json
+├── src/
+│   ├── locales.ts        # createLocaleSet(['en', 'fr'])
+│   ├── recipes.ts        # { web: [...], emails: [...] }
+│   ├── build.ts          # the build() call above; run on postinstall + CI
+│   ├── index.ts          # type glue + paraguas re-exports (below)
+│   └── generated/        # committed output of the build
+└── server.ts             # subpath for Node consumers
 ```
 
-- `loadLocale` / `loadTypedLocale<T>` — one recipe × language; `preloadLocales` / `preloadTypedLocales<T>` — a `Map` of all languages.
-- ICU is resolved via `intl-messageformat` **with the requested locale's plural and formatting rules** (Spanish output uses Spanish number grouping and plural categories).
-- Missing key in the requested language falls back to the reference language; missing in both throws `TranslationKeyError`.
-- `resolveLocale(raw, locales, localeSet)` accepts anything (query param, header, user pref) — non-string or unsupported input falls back to `DEFAULT_LOCALE`.
-- `distDir` is explicit, so tests can point at a fixture directory.
-- No hot-reload by design: locales don't swap mid-process; language is a request-time decision.
+```ts
+// packages/my-i18n/src/index.ts — the type glue every consumer imports
+import type { LocaleKeysOf } from 'paraguas';
+import type { recipes } from './recipes';
+import type { NamespaceTypeMap } from './generated/namespace-type-map';
 
-## Bringing a new consumer onto i18n
+export type LocaleKeys<R extends keyof typeof recipes> = LocaleKeysOf<typeof recipes, NamespaceTypeMap, R>;
+export { createLocaleProxy, resolveLocale } from 'paraguas';
+export { SUPPORTED_LOCALES, DEFAULT_LOCALE, isSupportedLocale } from './locales';
+```
 
-1. **Register a recipe** — add `myService: ['billing', 'errors']` to your recipes config.
-2. **Rebuild** — the pipeline emits `dist/myService/{en,es}.json` + refreshed types.
-3. **Wrapper module in your service** — `export type MyLocale = LocaleKeysOf<…, 'myService'>` + a `preload` function.
-4. **Preload at boot**, keep the `Map` in your server context.
-5. **Resolve per request** with `resolveLocale`.
-6. **Thread `t` through handlers** — narrow to namespace slices (`GetNestedValue<MyLocale, 'errors'>`) rather than passing the whole tree.
-7. **Wire the build order** — your service's `tsc` runs after the i18n build, so `dist/` and generated types exist.
+### Frontend (React + i18next)
 
-The caller (web app, upstream service) decides the language and passes it along — query param, header, stored preference.
+```tsx
+// web/src/i18n.ts
+import { createLocaleProxy, type LocaleKeys } from 'my-i18n';
+import { reactTokenRenderer } from 'paraguas/react';
+import { useTranslation } from 'react-i18next';
+
+export type WebKeys = LocaleKeys<'web'>;
+
+export function useTexts(): WebKeys {
+    const { i18n } = useTranslation();
+    return createLocaleProxy<WebKeys>(i18n.t.bind(i18n), { renderTokens: reactTokenRenderer });
+}
+```
+
+```tsx
+// web/src/cart/CartBanner.tsx
+const texts = useTexts();
+
+<p>{texts.cart.summary({ count: items.length })}</p>
+<p>{texts.cart.emptyHint({}, { browse: (label) => <Link to="/catalog">{label}</Link> })}</p>
+```
+
+i18next loads `my-i18n/dist/web/<lang>.json` (bundle it in dev, fetch it lazily in prod) — paraguas doesn't care how the bundle reaches i18next.
+
+### Node service (emails)
+
+```tsx
+// emails/src/i18n.ts
+import type { LocaleKeys } from 'my-i18n';
+import { SUPPORTED_LOCALES } from 'my-i18n';
+import { stringTokenRenderer } from 'paraguas';
+import { loadTypedLocale, preloadTypedLocales, type LoadOptions } from 'paraguas/server';
+
+export type EmailKeys = LocaleKeys<'emails'>;
+const options: LoadOptions = {
+    distDir: require.resolve('my-i18n/package.json').replace('package.json', 'dist'),
+    languages: SUPPORTED_LOCALES,
+    proxy: { renderTokens: stringTokenRenderer },
+};
+export const preloadEmailLocales = () => preloadTypedLocales<EmailKeys>('emails', options);
+```
+
+```tsx
+// emails/src/server.ts — boot once, pick per request
+import { resolveLocale, localeSet } from 'my-i18n';
+
+const locales = preloadEmailLocales();
+
+app.post('/order-shipped', (req, res) => {
+    const { t, lang } = resolveLocale(req.query.lang, locales, localeSet);
+    sendEmail(renderShippedEmail({ t: t.emails.orderShipped, order }));
+});
+```
+
+(`localeSet` is the `createLocaleSet` result re-exported from `my-i18n/src/locales.ts`.)
+
+Thread **namespace slices**, not the whole tree:
+
+```ts
+function renderShippedEmail({ t, order }: { t: GetNestedValue<EmailKeys, 'emails.orderShipped'>; order: Order }) {
+    return `${t.subject({ orderId: order.id })}\n${t.body({ eta: order.eta })}`;
+}
+```
+
+### Tests — real bundles, key-based assertions
+
+```ts
+const tFr = loadTypedLocale<EmailKeys>('emails', 'fr', options);
+
+it('renders the French shipped subject', () => {
+    const email = renderShippedEmail({ t: tFr.emails.orderShipped, order });
+    expect(email).toContain(tFr.emails.orderShipped.subject({ orderId: order.id }));
+    // never a literal "Votre commande…" — copy changes must not break tests
+});
+```
+
+Don't mock the i18n layer — the real loader is a sync fs read and catches copy bugs mocks hide.
 
 ## Using it right
 
@@ -196,23 +315,10 @@ t.greeting().replace('NAME', name);
 t.greeting({ name });
 
 // ❌ handing a helper the entire locale tree
-function fmt(t: PdfKeys) { … }
+function fmt(t: EmailKeys) { … }
 // ✅ the slice it needs
-function fmt(t: GetNestedValue<PdfKeys, 'billing'>) { … }
+function fmt(t: GetNestedValue<EmailKeys, 'emails.orderShipped'>) { … }
 ```
-
-Testing: load the real bundles (sync fs read — fast), assert against key calls, never against literal copy:
-
-```ts
-const tEs = loadTypedLocale<PdfKeys>('pdf', 'es', options);
-
-it('renders the Spanish total label', () => {
-    const pdf = renderInvoice(invoice, { locale: tEs });
-    expect(pdf).toContain(tEs.invoice.total());   // not "Total" — copy changes must not break tests
-});
-```
-
-Don't mock the i18n layer — the real loader catches copy bugs that mocks hide.
 
 ## Guarantees at a glance
 
@@ -234,7 +340,7 @@ locales/**/*.json merge=locale-json
 git config merge.locale-json.driver 'paraguas-merge-locales --driver %O %A %B'
 
 # or fix a file that already has conflict markers
-paraguas-merge-locales --resolve locales/en/billing.json
+paraguas-merge-locales --resolve locales/en/catalog.json
 ```
 
 ## License

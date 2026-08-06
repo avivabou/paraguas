@@ -9,10 +9,10 @@
     },
     "cart": {
         "summary": "{count, plural, =0 {Votre panier est vide} one {# article dans votre panier} other {# articles dans votre panier}}",
-        "removed": "{count, plural, one {# article supprimé — [clear]vider[/clear]} other {# articles supprimés — [clear]tout vider[/clear]}}",
-        "cta": "Prêt ? [checkout]Passer au paiement[/checkout] ou continuez vos achats.",
+        "removed": "{count, plural, one {# article supprimé — <clear>vider</clear>} other {# articles supprimés — <clear>tout vider</clear>}}",
+        "cta": "Prêt ? <checkout>Passer au paiement</checkout> ou continuez vos achats.",
         "greeting": "{gender, select, female {Bon retour, Mme {name}} male {Bon retour, M. {name}} other {Bon retour, {name}}}",
-        "inboxNudge": "{count, plural, =0 {Vous n'avez aucun message non lu} one {Vous avez [inbox]# message non lu[/inbox]} other {Vous avez [inbox]# messages non lus[/inbox]}}",
+        "inboxNudge": "{count, plural, =0 {Vous n'avez aucun message non lu} one {Vous avez <inbox># message non lu</inbox>} other {Vous avez <inbox># messages non lus</inbox>}}",
         "countLabel": "Nombre",
         "emailPreviewButton": "M'envoyer l'e-mail d'expédition"
     }

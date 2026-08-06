@@ -9,10 +9,10 @@
     },
     "cart": {
         "summary": "{count, plural, =0 {Tu carrito está vacío} one {# artículo en tu carrito} other {# artículos en tu carrito}}",
-        "removed": "{count, plural, one {# artículo eliminado — [clear]vaciar[/clear]} other {# artículos eliminados — [clear]vaciar todo[/clear]}}",
-        "cta": "¿Listo? [checkout]Ir al pago[/checkout] o sigue comprando.",
+        "removed": "{count, plural, one {# artículo eliminado — <clear>vaciar</clear>} other {# artículos eliminados — <clear>vaciar todo</clear>}}",
+        "cta": "¿Listo? <checkout>Ir al pago</checkout> o sigue comprando.",
         "greeting": "{gender, select, female {Bienvenida de nuevo, Sra. {name}} male {Bienvenido de nuevo, Sr. {name}} other {Hola de nuevo, {name}}}",
-        "inboxNudge": "{count, plural, =0 {No tienes mensajes sin leer} one {Tienes [inbox]# mensaje sin leer[/inbox]} other {Tienes [inbox]# mensajes sin leer[/inbox]}}",
+        "inboxNudge": "{count, plural, =0 {No tienes mensajes sin leer} one {Tienes <inbox># mensaje sin leer</inbox>} other {Tienes <inbox># mensajes sin leer</inbox>}}",
         "countLabel": "Cantidad",
         "emailPreviewButton": "Enviarme el correo de envío"
     }

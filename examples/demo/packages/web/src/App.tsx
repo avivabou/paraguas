@@ -36,14 +36,14 @@ export function App() {
             <section>
                 <h1>{texts.cart.greeting({ gender: 'female', name: 'Ada' })}</h1>
                 <p>{texts.cart.summary({ count })}</p>
-                <p>{texts.cart.inboxNudge({ count }, { inbox: (label) => <a href="#inbox">{label}</a> })}</p>
+                <p>{texts.cart.inboxNudge({ count }, { inbox: <a href="#inbox"/> })}</p>
                 <p>
                     {texts.cart.removed(
                         { count },
-                        { clear: (label) => <button disabled={count === 0} onClick={() => setCount(0)}>{label}</button> },
+                        { clear: <button disabled={count === 0} onClick={() => setCount(0)}/> },
                     )}
                 </p>
-                <p>{texts.cart.cta({ checkout: (label) => <a href="#checkout">{label}</a> })}</p>
+                <p>{texts.cart.cta({ checkout: <a href="#checkout"/> })}</p>
             </section>
 
             <section>

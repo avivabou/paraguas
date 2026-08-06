@@ -6,14 +6,14 @@ function CartBanner({ texts, itemCount }: { texts: LocaleKeyTexts<'cart'>; itemC
         <section>
             <h1>{texts.greeting({ gender: 'female', name: 'Ada' })}</h1>
             <p>{texts.summary({ count: itemCount })}</p>
-            <p>{texts.removed({ count: 2 }, { clear: (label) => <button data-action="clear">{label}</button> })}</p>
-            <p>{texts.cta({ checkout: (label) => <a href="/checkout">{label}</a> })}</p>
+            <p>{texts.removed({ count: 2 }, { clear: <button data-action="clear"/> })}</p>
+            <p>{texts.cta({ checkout: <a href="/checkout"/> })}</p>
         </section>
     );
 }
 
 function InboxNudge({ texts, count }: { texts: LocaleKeyTexts<'cart'>; count: number }) {
-    return <p>{texts.inboxNudge({ count }, { inbox: (label) => <a href="/inbox">{label}</a> })}</p>;
+    return <p>{texts.inboxNudge({ count }, { inbox: <a href="/inbox"/> })}</p>;
 }
 
 console.log('=== @demo/web — React components embedded inside translations ===');
@@ -34,7 +34,7 @@ const typeSafetyShowcase = (texts: WebLocaleKeys) => {
     // @ts-expect-error tagged key without its wrappers — the compiler refuses
     texts.cart.cta({});
     // @ts-expect-error wrong tag name
-    texts.cart.cta({}, { wrongTag: (label: string) => <b>{label}</b> });
+    texts.cart.cta({}, { wrongTag: <b/> });
     // @ts-expect-error missing ICU params
     texts.cart.summary();
     // @ts-expect-error the web recipe has no "emails" namespace — recipe narrowing

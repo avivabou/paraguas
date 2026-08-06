@@ -22,9 +22,9 @@ npm run preview    # email service + interactive browser app (language toggle, c
 
 - **Recipes** — `web` gets `catalog`+`cart`+`common`; `emails` gets `emails`+`common`. Referencing `texts.emails` from the web app is a compile error (see `typeSafetyShowcase` in `packages/web/src/demo.tsx`).
 - **Deep merge** — `cart.json` and `common.json` both contribute to `shop.actions.buttons`; each consumer sees its recipe's union of that branch.
-- **React embedding** — `[clear]…[/clear]` / `[checkout]…[/checkout]` tags become real `<button>`/`<a>` elements via `reactTokenRenderer`; the wrappers argument is compile-enforced. `npm run preview -w @demo/web` serves an interactive Vite app (the `clear` button actually mutates state), while `demo.tsx` prints the same components via `renderToStaticMarkup`.
+- **React embedding** — `<clear>…</clear>` / `<checkout>…</checkout>` tags become real `<button>`/`<a>` elements via `reactTokenRenderer`; the wrappers argument is compile-enforced. `npm run preview -w @demo/web` serves an interactive Vite app (the `clear` button actually mutates state), while `demo.tsx` prints the same components via `renderToStaticMarkup`.
 - **Browser vs server loading** — the Vite app imports the dist bundles directly and resolves through the browser-safe `paraguas` entry (`browser-i18n.ts`); the console demos read from disk through `@demo/i18n/server` — same keys, same types, two runtimes.
-- **ICU × embeds** — `cart.inboxNudge` puts the plural `#` *inside* the embedded label: `You have <a href="/inbox">5 unread messages</a>` — the link text morphs with the count, per language.
+- **ICU × embeds** — `cart.inboxNudge` puts the plural `#` *inside* the embedded label (`<inbox>`): `You have <a href="/inbox">5 unread messages</a>` — the link text morphs with the count, per language.
 - **ICU variety** — plurals with a tag-free `=0` branch (`You have no unread messages` — no link rendered), `select` (gendered greeting), number formatting (`1,299` vs French `1 299`).
 - **Three languages** — en, fr, es. Switch to Spanish and check the catalog for why the package is called *paraguas* ☂️.
 - **Frontend → service round-trip** — the app's email button fetches `GET /api/order-shipped-email/:orderId?lang=<selected>` (vite proxy → express service): the same selected language localizes both the React page and the server-rendered email.

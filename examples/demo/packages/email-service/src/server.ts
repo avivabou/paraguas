@@ -8,6 +8,10 @@ export function startServer(port: number): Promise<Server> {
     const app = express();
     const locales = preloadEmailLocales();
 
+    app.get('/', (_req, res) => {
+        res.type('text/plain').send('@demo/email-service — the web app runs on port 5173. Try /order-shipped-email/A-1042?lang=es');
+    });
+
     app.get('/order-shipped-email/:orderId', (req, res) => {
         const { t, lang } = resolveLocale(req, locales);
         const email = renderShippedEmail({

@@ -302,6 +302,22 @@ it('renders the French shipped subject', () => {
 
 Don't mock the i18n layer — the real loader is a sync fs read and catches copy bugs mocks hide.
 
+### `paraguas/react-i18next` — the hook factory
+
+For React apps on i18next, the consumer hook is one line (react-i18next + i18next are optional peers):
+
+```tsx
+import { createUseLocaleKeys } from 'paraguas/react-i18next';
+import { reactTokenRenderer } from 'paraguas/react';
+
+export const useTexts = createUseLocaleKeys<WebKeys>({ renderTokens: reactTokenRenderer });
+
+const texts = useTexts();                    // whole tree
+const { t } = useTexts('shop.actions');     // typed namespace slice
+```
+
+The hook returns `{ t, i18n, ready }`; `getNestedValue` (exported from the main entry) is the runtime twin of the `GetNestedValue` type if you slice manually.
+
 ## Using it right
 
 ```ts

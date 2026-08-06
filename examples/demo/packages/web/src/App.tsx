@@ -40,7 +40,7 @@ export function App() {
                 <p>
                     {texts.cart.removed(
                         { count },
-                        { undo: (label) => <button onClick={() => setCount(count + 1)}>{label}</button> },
+                        { undo: (label) => <button onClick={() => setCount(0)}>{label}</button> },
                     )}
                 </p>
                 <p>{texts.cart.cta({ checkout: (label) => <a href="#checkout">{label}</a> })}</p>

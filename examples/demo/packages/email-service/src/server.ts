@@ -4,12 +4,14 @@ import { preloadEmailLocales } from './i18n';
 import { renderShippedEmail } from './render-shipped-email';
 import { resolveLocale } from './resolve-locale';
 
-export function startServer(port: number): Promise<Server> {
+export function createApp(): express.Express {
     const app = express();
     const locales = preloadEmailLocales();
 
     app.get('/', (_req, res) => {
-        res.type('text/plain').send('@demo/email-service — the web app runs on port 5173. Try /order-shipped-email/A-1042?lang=es');
+        res.type('text/plain').send(
+            '@demo/email-service — try /order-shipped-email/A-1042?lang=es',
+        );
     });
 
     app.get('/order-shipped-email/:orderId', (req, res) => {
@@ -21,7 +23,11 @@ export function startServer(port: number): Promise<Server> {
         res.json({ lang, ...email, statusLine: t.shop.actions.status.shipped() });
     });
 
+    return app;
+}
+
+export function startServer(port: number): Promise<Server> {
     return new Promise((resolve) => {
-        const server = app.listen(port, () => resolve(server));
+        const server = createApp().listen(port, () => resolve(server));
     });
 }

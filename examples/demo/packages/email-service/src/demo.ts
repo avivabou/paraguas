@@ -1,18 +1,19 @@
-import { demoLoadOptions, i18nPackage, type EmailKeys, type EmailTexts } from '@demo/i18n';
-import { preloadTypedLocales } from 'paraguas/server';
+import { startServer } from './server';
 
-const locales = preloadTypedLocales<EmailKeys>('emails', demoLoadOptions);
+const PORT = 4310;
 
-function renderShippedEmail({ t, orderId }: { t: EmailTexts<'emails.orderShipped'>; orderId: string }): string {
-    const subject = t.subject({ orderId });
-    const body = t.body({ count: 3, shippedAt: new Date('2026-08-01') });
-    return `${subject}\n${body}`;
-}
+(async () => {
+    const server = await startServer(PORT);
+    console.log('=== @demo/email-service — express server, ?lang= per request, no React anywhere ===');
 
-console.log('=== @demo/email-service — no React anywhere ===');
-for (const requestedLang of ['en', 'fr', 'de', undefined]) {
-    const { t, lang } = i18nPackage.resolve(requestedLang, locales);
-    console.log(`\n[requested: ${String(requestedLang)} → served: ${lang}]`);
-    console.log(renderShippedEmail({ t: t.emails.orderShipped, orderId: 'A-1042' }));
-    console.log(`status line (shared "common" namespace): ${t.shop.actions.status.shipped()}`);
-}
+    for (const query of ['?lang=en', '?lang=fr', '?lang=de', '']) {
+        const response = await fetch(`http://localhost:${PORT}/order-shipped-email/A-1042${query}`);
+        const email = (await response.json()) as Record<string, string>;
+        console.log(`\nGET /order-shipped-email/A-1042${query}  →  served: ${email.lang}`);
+        console.log(`  subject: ${email.subject}`);
+        console.log(`  body:    ${email.body}`);
+        console.log(`  status (shared "common" namespace): ${email.statusLine}`);
+    }
+
+    server.close();
+})();

@@ -1,17 +1,7 @@
-import { demoLoadOptions, type WebKeys, type WebTexts } from '@demo/i18n';
-import { createLocaleProxy } from 'paraguas';
-import { reactTokenRenderer } from 'paraguas/react';
-import { loadTypedLocale, loadLocale } from 'paraguas/server';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { loadWebTexts, type LocaleKeyTexts, type WebLocaleKeys } from './i18n';
 
-function loadWebTexts(lang: string): WebKeys {
-    const resolver = loadLocale('web', lang, demoLoadOptions);
-    return createLocaleProxy<WebKeys>((key, values) => resolver.t(key, values), {
-        renderTokens: reactTokenRenderer,
-    });
-}
-
-function CartBanner({ texts, itemCount }: { texts: WebTexts<'cart'>; itemCount: number }) {
+function CartBanner({ texts, itemCount }: { texts: LocaleKeyTexts<'cart'>; itemCount: number }) {
     return (
         <section>
             <h1>{texts.greeting({ gender: 'female', name: 'Ada' })}</h1>
@@ -22,7 +12,7 @@ function CartBanner({ texts, itemCount }: { texts: WebTexts<'cart'>; itemCount: 
     );
 }
 
-function InboxNudge({ texts, count }: { texts: WebTexts<'cart'>; count: number }) {
+function InboxNudge({ texts, count }: { texts: LocaleKeyTexts<'cart'>; count: number }) {
     return <p>{texts.inboxNudge({ count }, { inbox: (label) => <a href="/inbox">{label}</a> })}</p>;
 }
 
@@ -40,7 +30,7 @@ for (const lang of ['en', 'fr']) {
     console.log(`  ${texts.shop.actions.buttons.addToCart()} | ${texts.shop.actions.buttons.viewOrder()}`);
 }
 
-const typeSafetyShowcase = (texts: WebKeys) => {
+const typeSafetyShowcase = (texts: WebLocaleKeys) => {
     // @ts-expect-error tagged key without its wrappers — the compiler refuses
     texts.cart.cta({});
     // @ts-expect-error wrong tag name
@@ -51,4 +41,3 @@ const typeSafetyShowcase = (texts: WebKeys) => {
     texts.emails;
 };
 void typeSafetyShowcase;
-void loadTypedLocale;

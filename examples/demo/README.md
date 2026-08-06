@@ -23,6 +23,6 @@ npm start        # build i18n → run both consumers → typecheck both
 - **React embedding** — `[undo]…[/undo]` / `[checkout]…[/checkout]` tags become real `<button>`/`<a>` elements via `reactTokenRenderer`; the wrappers argument is compile-enforced.
 - **ICU × embeds** — `cart.inboxNudge` puts the plural `#` *inside* the embedded label: `You have <a href="/inbox">5 unread messages</a>` — the link text morphs with the count, per language.
 - **ICU variety** — plurals, `select` (gendered greeting), number formatting (`1,299` vs French `1 299`).
-- **Locale resolution** — the email service preloads once and picks per request via `i18nPackage.resolve`; unsupported (`de`) and missing input fall back to `en`.
+- **A real HTTP server** — `/email-service` is an express app: `GET /order-shipped-email/:orderId?lang=fr`. Locales preload at boot; `resolve-locale.ts` adapts the request query onto `i18nPackage.resolve`; unsupported (`de`) and missing `?lang=` fall back to `en`.
 - **Types end-to-end** — `WebTexts<'cart'>` namespace slices in component props; `@ts-expect-error` lines in `demo.tsx` prove wrong tags, missing wrappers, missing ICU params, and out-of-recipe access all fail `tsc`.
 - **React-free services** — `@demo/email-service` has no React dependency; the i18n package's 3-line `jsx-shim.d.ts` covers the generated embed signatures for its typecheck.

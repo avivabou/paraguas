@@ -24,3 +24,9 @@ export { createLocaleSet, UnsupportedLocaleError, type LocaleSet } from './runti
 export { resolveLocale, LocaleNotPreloadedError } from './runtime/resolve-locale';
 export type { DeepMerge, MapNamespaces, LocaleKeysOf } from './runtime/types';
 export { getNestedValue } from './runtime/get-nested-value';
+export {
+    defineLocalePackage,
+    type LocalePackage,
+    type LocalePackageConfig,
+    type LocaleKeysFor,
+} from './runtime/define-locale-package';

@@ -197,14 +197,24 @@ Semantics: ICU resolves via `intl-messageformat` **with the requested locale's p
 
 ## Best practice — full setup
 
-Monorepo layout: one internal package owns the locale content; every consumer depends on it.
+Monorepo layout: one internal package owns the locale content; every consumer depends on it. `defineLocalePackage` collapses the glue to a single call:
+
+```ts
+// packages/my-i18n/src/package.ts — languages + recipes, once
+import { defineLocalePackage } from 'paraguas';
+
+export const i18nPackage = defineLocalePackage({
+    languages: ['en', 'fr'] as const,
+    recipes: { web: ['catalog', 'cart', 'common'], emails: ['emails', 'common'] } as const,
+});
+// → { localeSet, loadOptions(distDir, proxy?), resolve(raw, locales), languages, recipes }
+```
 
 ```
 packages/my-i18n/
 ├── locales/{en,fr}/{catalog,cart,emails,common}.json
 ├── src/
-│   ├── locales.ts        # createLocaleSet(['en', 'fr'])
-│   ├── recipes.ts        # { web: [...], emails: [...] }
+│   ├── package.ts        # the defineLocalePackage call above
 │   ├── build.ts          # the build() call above; run on postinstall + CI
 │   ├── index.ts          # type glue + paraguas re-exports (below)
 │   └── generated/        # committed output of the build
@@ -213,13 +223,20 @@ packages/my-i18n/
 
 ```ts
 // packages/my-i18n/src/index.ts — the type glue every consumer imports
-import type { LocaleKeysOf } from 'paraguas';
-import type { recipes } from './recipes';
+import type { LocaleKeysFor } from 'paraguas';
 import type { NamespaceTypeMap } from './generated/namespace-type-map';
+import { i18nPackage } from './package';
 
-export type LocaleKeys<R extends keyof typeof recipes> = LocaleKeysOf<typeof recipes, NamespaceTypeMap, R>;
-export { createLocaleProxy, resolveLocale } from 'paraguas';
-export { SUPPORTED_LOCALES, DEFAULT_LOCALE, isSupportedLocale } from './locales';
+export type LocaleKeys<R extends keyof typeof i18nPackage.recipes> = LocaleKeysFor<typeof i18nPackage, NamespaceTypeMap, R>;
+export { createLocaleProxy } from 'paraguas';
+export { i18nPackage };
+```
+
+The build call binds the same package object:
+
+```ts
+// packages/my-i18n/src/build.ts
+await build({ localesDir, distDir, generatedDir, ...i18nPackage, structures: [bracketTagStructure] });
 ```
 
 ### Frontend (React + i18next)
@@ -248,33 +265,27 @@ i18next loads `my-i18n/dist/web/<lang>.json` (bundle it in dev, fetch it lazily 
 
 ```tsx
 // emails/src/i18n.ts
-import type { LocaleKeys } from 'my-i18n';
-import { SUPPORTED_LOCALES } from 'my-i18n';
+import { i18nPackage, type LocaleKeys } from 'my-i18n';
 import { stringTokenRenderer } from 'paraguas';
-import { loadTypedLocale, preloadTypedLocales, type LoadOptions } from 'paraguas/server';
+import { preloadTypedLocales } from 'paraguas/server';
 
 export type EmailKeys = LocaleKeys<'emails'>;
-const options: LoadOptions = {
-    distDir: require.resolve('my-i18n/package.json').replace('package.json', 'dist'),
-    languages: SUPPORTED_LOCALES,
-    proxy: { renderTokens: stringTokenRenderer },
-};
+const distDir = require.resolve('my-i18n/package.json').replace('package.json', 'dist');
+const options = i18nPackage.loadOptions(distDir, { renderTokens: stringTokenRenderer });
 export const preloadEmailLocales = () => preloadTypedLocales<EmailKeys>('emails', options);
 ```
 
 ```tsx
 // emails/src/server.ts — boot once, pick per request
-import { resolveLocale, localeSet } from 'my-i18n';
+import { i18nPackage } from 'my-i18n';
 
 const locales = preloadEmailLocales();
 
 app.post('/order-shipped', (req, res) => {
-    const { t, lang } = resolveLocale(req.query.lang, locales, localeSet);
+    const { t, lang } = i18nPackage.resolve(req.query.lang, locales);
     sendEmail(renderShippedEmail({ t: t.emails.orderShipped, order }));
 });
 ```
-
-(`localeSet` is the `createLocaleSet` result re-exported from `my-i18n/src/locales.ts`.)
 
 Thread **namespace slices**, not the whole tree:
 

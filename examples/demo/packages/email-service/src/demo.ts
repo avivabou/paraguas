@@ -6,7 +6,7 @@ const PORT = 4310;
     const server = await startServer(PORT);
     console.log('=== @demo/email-service — express server, ?lang= per request, no React anywhere ===');
 
-    for (const query of ['?lang=en', '?lang=fr', '?lang=de', '']) {
+    for (const query of ['?lang=en', '?lang=fr', '?lang=es', '?lang=de', '']) {
         const response = await fetch(`http://localhost:${PORT}/order-shipped-email/A-1042${query}`);
         const email = (await response.json()) as Record<string, string>;
         console.log(`\nGET /order-shipped-email/A-1042${query}  →  served: ${email.lang}`);

@@ -17,7 +17,7 @@ function InboxNudge({ texts, count }: { texts: LocaleKeyTexts<'cart'>; count: nu
 }
 
 console.log('=== @demo/web — React components embedded inside translations ===');
-for (const lang of ['en', 'fr']) {
+for (const lang of ['en', 'fr', 'es']) {
     const texts = loadWebTexts(lang);
     console.log(`\n[${lang}]`);
     console.log(renderToStaticMarkup(<CartBanner texts={texts.cart} itemCount={3} />));
@@ -25,7 +25,7 @@ for (const lang of ['en', 'fr']) {
     for (const count of [1, 5]) {
         console.log(`  ${renderToStaticMarkup(<InboxNudge texts={texts.cart} count={count} />)}`);
     }
-    console.log(`catalog line: ${texts.catalog.itemLine({ name: 'Umbrella', price: 1299, stock: 0 })}`);
+    console.log(`catalog line: ${texts.catalog.itemLine({ name: texts.catalog.products.umbrella(), price: 1299, stock: 0 })}`);
     console.log(`deep-merged buttons (cart.json + common.json own one branch):`);
     console.log(`  ${texts.shop.actions.buttons.addToCart()} | ${texts.shop.actions.buttons.viewOrder()}`);
 }

@@ -1,0 +1,9 @@
+{
+    "catalog": {
+        "title": "Nuestro catálogo",
+        "itemLine": "{name} — {price, number} ({stock, plural, =0 {agotado} other {# en stock}})",
+        "products": {
+            "umbrella": "Paraguas"
+        }
+    }
+}

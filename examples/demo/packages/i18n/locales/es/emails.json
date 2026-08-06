@@ -1,0 +1,8 @@
+{
+    "emails": {
+        "orderShipped": {
+            "subject": "¡El pedido {orderId} está en camino!",
+            "body": "Buenas noticias — {count, plural, one {tu paquete fue enviado} other {tus # paquetes fueron enviados}} el {shippedAt, date, medium}."
+        }
+    }
+}

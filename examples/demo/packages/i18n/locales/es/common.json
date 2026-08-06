@@ -1,0 +1,14 @@
+{
+    "shop": {
+        "actions": {
+            "buttons": {
+                "viewOrder": "Ver pedido",
+                "trackShipment": "Rastrear envío"
+            },
+            "status": {
+                "shipped": "Enviado",
+                "processing": "En proceso"
+            }
+        }
+    }
+}

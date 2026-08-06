@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "demo": "tsx src/demo.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "serve": "tsx src/serve.ts"
   },
   "dependencies": {
     "@demo/i18n": "*",

@@ -2,10 +2,22 @@ import { useMemo, useState } from 'react';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '@demo/i18n';
 import { browserWebTexts } from './browser-i18n';
 
+interface ShippedEmail {
+    lang: string;
+    subject: string;
+    body: string;
+}
+
 export function App() {
     const [lang, setLang] = useState<SupportedLocale>('en');
     const [count, setCount] = useState(1);
+    const [email, setEmail] = useState<ShippedEmail | null>(null);
     const texts = useMemo(() => browserWebTexts(lang), [lang]);
+
+    const fetchShippedEmail = async () => {
+        const response = await fetch(`/api/order-shipped-email/A-1042?lang=${lang}`);
+        setEmail((await response.json()) as ShippedEmail);
+    };
 
     return (
         <main>
@@ -16,7 +28,7 @@ export function App() {
                     </button>
                 ))}
                 <label>
-                    count: {count}
+                    {texts.cart.countLabel()}: {count}
                     <input type="range" min={0} max={9} value={count} onChange={(e) => setCount(Number(e.target.value))} />
                 </label>
             </div>
@@ -36,11 +48,22 @@ export function App() {
 
             <section>
                 <h2>{texts.catalog.title()}</h2>
-                <p>{texts.catalog.itemLine({ name: 'Umbrella', price: 1299, stock: count })}</p>
+                <p>{texts.catalog.itemLine({ name: texts.catalog.products.umbrella(), price: 1299, stock: count })}</p>
                 <p>
                     {texts.shop.actions.buttons.addToCart()} · {texts.shop.actions.buttons.viewOrder()} ·{' '}
                     {texts.shop.actions.status.shipped()}
                 </p>
+            </section>
+
+            <section>
+                <button onClick={fetchShippedEmail}>{texts.cart.emailPreviewButton()}</button>
+                {email != null && (
+                    <blockquote>
+                        <strong>{email.subject}</strong>
+                        <p>{email.body}</p>
+                        <small>served by @demo/email-service in: {email.lang}</small>
+                    </blockquote>
+                )}
             </section>
         </main>
     );

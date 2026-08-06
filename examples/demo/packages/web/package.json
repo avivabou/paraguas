@@ -5,8 +5,8 @@
   "scripts": {
     "demo": "tsx src/demo.tsx",
     "typecheck": "tsc --noEmit",
-    "preview": "vite",
-    "build:preview": "vite build"
+    "build:preview": "vite build",
+    "vite": "vite"
   },
   "dependencies": {
     "@demo/i18n": "*",

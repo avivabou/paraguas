@@ -9,7 +9,7 @@
     "demo": "npm run demo -w @demo/email-service && npm run demo -w @demo/web",
     "typecheck": "npm run typecheck -w @demo/email-service && npm run typecheck -w @demo/web",
     "start": "npm run build && npm run demo && npm run typecheck",
-    "preview": "concurrently -k \"npm run serve -w @demo/email-service\" \"npm run preview -w @demo/web\""
+    "preview": "concurrently -k \"npm run serve -w @demo/email-service\" \"npm run vite -w @demo/web\""
   },
   "devDependencies": {
     "tsx": "^4.19.0",

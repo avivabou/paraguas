@@ -95,7 +95,7 @@ await build({
 | `recipes` | `Record<string, readonly string[]>` | ✅ | Recipe name → ordered namespace list. Order matters only for merge precedence of shared parents |
 | `generatedDir` | `string` | — | Where generated key types + `namespace-type-map.ts` go. Omit to skip codegen entirely |
 | `structures` | `TokenStructure[]` | — | Token structures to **validate** cross-language (see below). Default: none |
-| `codegen` | `Omit<GenerateOptions, 'source' \| 'output' \| 'functionName'>` | — | Passthrough to the bundled keys-weaver generator: `layout` (`'single-file'` \| `'per-node'`), `sortKeys`, `emitFactory`, `comments`, `banner`, `structures` |
+| `codegen` | `Omit<GenerateOptions, 'source' \| 'output' \| 'functionName'>` | — | Passthrough to the bundled keys-weaver generator: `layout` (`'single-file'` \| `'per-node'`), `sortKeys`, `emitFactory`, `comments`, `banner`, `structures`. Codegen `structures` default to paraguas's i18n standard — `[icuData(), taggedEmbeds()]` (typed ICU params + `<tag>` embeds, basic HTML excluded), both exported from `paraguas/build` |
 | `generate` | `(req: { source, output, functionName }) => Promise \| unknown` | — | Replace the bundled generator entirely (custom codegen). When set, `codegen` is ignored |
 | `functionNameFor` | `(namespace: string) => string` | — | Generated type/file base name per namespace. Default: PascalCase + `Keys` (`order-emails` → `OrderEmailsKeys`) |
 | `extras.typeMapTypeParams` | `string[]` | — | Generic params for `namespace-type-map.ts` when a custom generator emits generic types. Unnecessary with the bundled generator |
@@ -130,22 +130,16 @@ Browser-safe entry: types, the proxy, token rendering, locale guards. No filesys
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `t` | `(key: string, values?: Record<string, unknown>) => string` | Your translate function — i18next's `t` in a web app, paraguas's own resolver on a server |
-| `options.renderTokens` | `TokenRenderer?` | Renderer invoked when a call passes embed wrappers. Omit it and any wrappers call throws `MissingTokenRendererError` |
+| `options.renderKey` | `RenderKey?` | `(path, data, wrappers) => unknown` — invoked with the whole call when embed wrappers are passed (`t` is never called for that key). Omit it and any wrappers call throws `MissingRenderKeyError` |
 
-The proxy turns property access into dotted key paths and calls `t`. When the trailing argument is a **wrapper record** (an object whose values are all functions), it is never forwarded to `t`; the resolved string is routed through `renderTokens` instead.
+The proxy turns property access into dotted key paths and calls `t`. When the trailing argument is a **wrapper record** (an object whose values are all React elements or all functions), the entire call is delegated to `renderKey` — in an i18next app that means `<Trans>` owns resolution and element substitution.
 
 ```ts
 texts.cart.summary({ count: 3 });                                   // plain ICU key → string
-texts.cart.emptyHint({}, { browse: <a href="/"/> });                      // embed key → element
+texts.cart.emptyHint({}, { browse: <a href="/"/> });                // embed key → renderKey result
 ```
 
-### Token helpers
-
-| Export | Signature | Use |
-| --- | --- | --- |
-| `splitWithTokens` | `(text, wrappers, structure?) => Array<string \| T>` | The React-free split/interleave core — build custom renderers on it |
-| `stringTokenRenderer` | `TokenRenderer<string>` | Joins parts into a plain string — emails, logs, string-only tests |
-| `angleTagStructure` | `TokenStructure` | The `<tag>label</tag>` pattern, shared by build validation and runtime |
+`angleTagStructure` — the `<tag>label</tag>` pattern (`/<(\w+)>(.*?)<\/\1>/g`, basic HTML tags excluded) — is exported for build-time validation and for anyone building custom tooling on the same convention.
 
 ### `resolveLocale(raw, locales, localeSet)`
 
@@ -183,26 +177,15 @@ The one-call glue for a consumer monorepo's i18n package — returns everything 
 Tagged keys render through react-i18next's `<Trans>` components mapping — the translated chunk becomes the element's children (react/react-i18next/i18next are optional peers):
 
 ```tsx
-import { transRenderKey, createUseLocaleKeys } from 'paraguas/react-i18next';
+import { createUseLocaleKeys } from 'paraguas/react-i18next';
 
-export const useTexts = createUseLocaleKeys<WebKeys>({ renderKey: transRenderKey });
+export const useTexts = createUseLocaleKeys<WebKeys>();
 
 texts.cart.cta({}, { readMore: <a href={url}/> });
 // → <Trans i18nKey="cart.cta" components={{ readMore: <a href={url}/> }} />
 ```
 
-With `renderKey`, the proxy delegates the whole call — Trans resolves via `t()` (ICU formats first; i18next-icu ships `ignoreTag: true`, so tags survive as literal text), then substitutes tags with your elements. Basic HTML tags (`<i>`, `<strong>`, `<br/>`, `<p>`) render natively and are excluded from detection and typing.
-
-## `paraguas/react` — renderer without i18next
-
-For bare-React consumers, `reactTokenRenderer` splits the resolved text itself and clones your elements with the chunk as children:
-
-```tsx
-import { reactTokenRenderer } from 'paraguas/react';
-
-const texts = createLocaleProxy<WebKeys>(tFn, { renderTokens: reactTokenRenderer });
-texts.cart.cta({}, { readMore: <a href={url}/> });
-```
+The hook always renders tagged keys through `<Trans>` (`transRenderKey` is also exported for wiring `createLocaleProxy` manually). The proxy delegates the whole call — Trans resolves via `t()` (ICU formats first; i18next-icu ships `ignoreTag: true`, so tags survive as literal text), then substitutes tags with your elements. Basic HTML tags (`<i>`, `<strong>`, `<br/>`, `<p>`) render natively and are excluded from detection and typing.
 
 ### Embeds inside ICU plurals
 
@@ -233,7 +216,7 @@ Node-only entry: filesystem loaders reading the pre-built recipe bundles. No HTT
 | `distDir` | `string` | ✅ | Where the built bundles live — explicit so tests can point at fixtures |
 | `languages` | `readonly string[]` | ✅ | Languages to accept/preload; `languages[0]` is the fallback source unless overridden |
 | `fallbackLanguage` | `string?` | — | Override the fallback source language |
-| `proxy` | `LocaleProxyOptions?` | — | Options for the typed proxy — e.g. `{ renderTokens: stringTokenRenderer }` for services that render embeds into strings |
+| `proxy` | `LocaleProxyOptions?` | — | Options for the typed proxy (`renderKey`). Server recipes normally carry no embed tags — keep component embeds in browser-rendered namespaces |
 
 Semantics: ICU resolves via `intl-messageformat` **with the requested locale's plural and formatting rules** (French output gets French plural categories and number grouping). A key missing in the requested language falls back to the reference language; missing in both throws `TranslationKeyError`. No hot-reload by design — language is a request-time decision over a boot-time preload.
 
@@ -289,10 +272,9 @@ await build({ localesDir, distDir, generatedDir, ...i18nPackage, structures: [an
 // web/src/i18n.ts
 import type { LocaleKeys } from 'my-i18n';
 import { createUseLocaleKeys } from 'paraguas/react-i18next';
-import { reactTokenRenderer } from 'paraguas/react';
 
 export type WebKeys = LocaleKeys<'web'>;
-export const useTexts = createUseLocaleKeys<WebKeys>({ renderTokens: reactTokenRenderer });
+export const useTexts = createUseLocaleKeys<WebKeys>();
 ```
 
 ```tsx
@@ -310,11 +292,10 @@ i18next loads `my-i18n/dist/web/<lang>.json` (bundle it in dev, fetch it lazily 
 ```tsx
 // emails/src/i18n.ts
 import { i18nPackage, type EmailKeys } from 'my-i18n';
-import { stringTokenRenderer } from 'paraguas';
 import { preloadTypedLocales } from 'paraguas/server';
 
 const distDir = require.resolve('my-i18n/package.json').replace('package.json', 'dist');
-const options = i18nPackage.loadOptions(distDir, { renderTokens: stringTokenRenderer });
+const options = i18nPackage.loadOptions(distDir);
 export const preloadEmailLocales = () => preloadTypedLocales<EmailKeys>('emails', options);
 ```
 
@@ -358,9 +339,8 @@ For React apps on i18next, the consumer hook is one line (react-i18next + i18nex
 
 ```tsx
 import { createUseLocaleKeys } from 'paraguas/react-i18next';
-import { reactTokenRenderer } from 'paraguas/react';
 
-export const useTexts = createUseLocaleKeys<WebKeys>({ renderTokens: reactTokenRenderer });
+export const useTexts = createUseLocaleKeys<WebKeys>();
 
 const { t: texts } = useTexts();               // whole tree
 const { t: actions } = useTexts('shop.actions'); // typed namespace slice

@@ -1,5 +1,3 @@
-import type { TokenRenderer, TokenWrappers } from './tokens';
-
 export type NestedPaths<T, Prefix extends string = ''> = T extends object
     ? {
           [K in keyof T & string]: T[K] extends (...args: never[]) => unknown
@@ -18,12 +16,10 @@ export type GetNestedValue<T, Path extends string> = Path extends `${infer First
       ? T[Path]
       : never;
 
-export class MissingTokenRendererError extends Error {
+export class MissingRenderKeyError extends Error {
     constructor(path: string) {
-        super(
-            `Locale key "${path}" was called with token wrappers, but no renderKey or renderTokens was configured on this proxy`,
-        );
-        this.name = 'MissingTokenRendererError';
+        super(`Locale key "${path}" was called with component wrappers, but no renderKey was configured on this proxy`);
+        this.name = 'MissingRenderKeyError';
     }
 }
 
@@ -35,7 +31,6 @@ export type RenderKey = (
 
 export interface LocaleProxyOptions {
     renderKey?: RenderKey;
-    renderTokens?: TokenRenderer;
 }
 
 export type Translate = (key: string, values?: Record<string, unknown>) => string;
@@ -55,7 +50,7 @@ function createProxyNode(t: Translate, options: LocaleProxyOptions, path: string
     const target = (() => undefined) as unknown as Record<string | symbol, unknown>;
     return new Proxy(target, {
         get(_ignored, property) {
-            if (typeof property !== 'string') return undefined;
+            if (typeof property !== 'string' || property === 'then') return undefined;
             return createProxyNode(t, options, path === '' ? property : `${path}.${property}`);
         },
         apply(_ignored, _thisArg, args: unknown[]) {
@@ -64,13 +59,11 @@ function createProxyNode(t: Translate, options: LocaleProxyOptions, path: string
             const wrappers = isWrapperRecord(last) ? last : undefined;
             const dataArgs = wrappers == null ? args : args.slice(0, -1);
             const data = dataArgs[0] as Record<string, unknown> | undefined;
-            if (wrappers != null && options.renderKey != null) {
+            if (wrappers != null) {
+                if (options.renderKey == null) throw new MissingRenderKeyError(finalPath);
                 return options.renderKey(finalPath, data, wrappers);
             }
-            const text = data === undefined ? t(finalPath) : t(finalPath, data);
-            if (wrappers == null) return text;
-            if (options.renderTokens == null) throw new MissingTokenRendererError(finalPath);
-            return options.renderTokens(text, wrappers as TokenWrappers<never>);
+            return data === undefined ? t(finalPath) : t(finalPath, data);
         },
     });
 }

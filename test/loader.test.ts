@@ -4,11 +4,10 @@ import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadLocale, loadTypedLocale, preloadTypedLocales, type LoadOptions } from '../src/loader/loader';
 import { UnsupportedLocaleError } from '../src/runtime/locales';
-import { stringTokenRenderer } from '../src/runtime/tokens';
 
 interface AppKeys {
     greeting: (data: Record<'name', unknown>) => string;
-    cta: (embeds: Record<'go', (label: string) => string>) => string;
+    cta: (embeds: Record<'go', unknown>) => unknown;
     plain: () => string;
 }
 
@@ -54,12 +53,19 @@ describe('loadTypedLocale', () => {
         expect(texts.plain()).toBe('Plain');
     });
 
-    it('renders embeds through the configured proxy renderer', () => {
+    it('delegates embed calls to the configured renderKey', () => {
+        const renderCalls: unknown[][] = [];
         const texts = loadTypedLocale<AppKeys>('app', 'es', {
             ...options(),
-            proxy: { renderTokens: stringTokenRenderer },
+            proxy: {
+                renderKey: (path, data, wrappers) => {
+                    renderCalls.push([path, data, Object.keys(wrappers)]);
+                    return 'delegated';
+                },
+            },
         });
-        expect(texts.cta({ go: (label) => `<${label}>` })).toBe('¡Ahora <Ve>!');
+        expect(texts.cta({ go: (label: string) => label })).toBe('delegated');
+        expect(renderCalls).toEqual([['cta', undefined, ['go']]]);
     });
 });
 

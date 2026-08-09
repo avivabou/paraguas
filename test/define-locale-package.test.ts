@@ -19,11 +19,11 @@ describe('defineLocalePackage', () => {
     });
 
     it('threads proxy options into load options only when given', () => {
-        const renderTokens = (text: string): string => text;
-        expect(pkg.loadOptions('/d', { renderTokens })).toEqual({
+        const renderKey = (path: string): string => path;
+        expect(pkg.loadOptions('/d', { renderKey })).toEqual({
             distDir: '/d',
             languages: ['en', 'fr'],
-            proxy: { renderTokens },
+            proxy: { renderKey },
         });
     });
 

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { SUPPORTED_LOCALES, type SupportedLocale } from '@demo/i18n';
-import { browserWebTexts } from './browser-i18n';
+import { i18n, useWebTexts } from './i18n';
 
 interface ShippedEmail {
     lang: string;
@@ -9,10 +9,10 @@ interface ShippedEmail {
 }
 
 export function App() {
-    const [lang, setLang] = useState<SupportedLocale>('en');
     const [count, setCount] = useState(1);
     const [email, setEmail] = useState<ShippedEmail | null>(null);
-    const texts = useMemo(() => browserWebTexts(lang), [lang]);
+    const { t: texts } = useWebTexts();
+    const lang = i18n.language as SupportedLocale;
 
     const fetchShippedEmail = async () => {
         const response = await fetch(`/api/order-shipped-email/A-1042?lang=${lang}`);
@@ -23,7 +23,7 @@ export function App() {
         <main>
             <div className="controls">
                 {SUPPORTED_LOCALES.map((locale) => (
-                    <button key={locale} disabled={locale === lang} onClick={() => setLang(locale)}>
+                    <button key={locale} disabled={locale === lang} onClick={() => void i18n.changeLanguage(locale)}>
                         {locale.toUpperCase()}
                     </button>
                 ))}

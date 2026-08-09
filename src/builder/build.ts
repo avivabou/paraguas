@@ -1,12 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import {
-    generate as keysWeaverGenerate,
-    icuData,
-    taggedEmbeds,
-    type GenerateOptions as KeysWeaverOptions,
-} from 'keys-weaver';
+import { generate as keysWeaverGenerate, type GenerateOptions as KeysWeaverOptions } from 'keys-weaver';
 import type { TokenStructure } from '../runtime/tokens';
+import { icuData, taggedEmbeds } from './structures';
 
 export class ValidationError extends Error {
     constructor(message: string) {

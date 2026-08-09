@@ -1,7 +1,7 @@
 {
   "name": "paraguas",
-  "version": "0.3.0",
-  "description": "Generic i18n mechanism: recipe-based locale build pipeline, typed runtime proxy with embedded-component rendering, and a server-side loader",
+  "version": "0.4.0",
+  "description": "Typed i18n standard on the keys-weaver engine: recipe-based locale build pipeline, ICU + <Trans> embedded components, typed runtime proxy, and a server-side loader",
   "license": "MIT",
   "author": "avivabou",
   "repository": {
@@ -33,11 +33,6 @@
       "import": "./dist/build.js",
       "require": "./dist/build.cjs"
     },
-    "./react": {
-      "types": "./dist/react.d.ts",
-      "import": "./dist/react.js",
-      "require": "./dist/react.cjs"
-    },
     "./react-i18next": {
       "types": "./dist/react-i18next.d.ts",
       "import": "./dist/react-i18next.js",
@@ -62,8 +57,9 @@
     "prepublishOnly": "npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
+    "@formatjs/icu-messageformat-parser": "^2.7.0",
     "intl-messageformat": "^11.2.4",
-    "keys-weaver": "^0.2.0"
+    "keys-weaver": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

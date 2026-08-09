@@ -12,7 +12,11 @@
     "@demo/i18n": "*",
     "paraguas": "latest",
     "react": "^18.3.0",
-    "react-dom": "^18.3.0"
+    "react-dom": "^18.3.0",
+    "i18next": "^23.16.0",
+    "i18next-icu": "^2.3.0",
+    "react-i18next": "^15.0.0",
+    "intl-messageformat": "^10.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",

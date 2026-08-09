@@ -1,21 +1,13 @@
 export {
     createLocaleProxy,
-    MissingTokenRendererError,
+    MissingRenderKeyError,
     type LocaleProxyOptions,
     type RenderKey,
     type Translate,
     type NestedPaths,
     type GetNestedValue,
 } from './runtime/locale-proxy';
-export {
-    splitWithTokens,
-    stringTokenRenderer,
-    angleTagStructure,
-    BASIC_HTML_TAGS,
-    type TokenStructure,
-    type TokenWrappers,
-    type TokenRenderer,
-} from './runtime/tokens';
+export { angleTagStructure, BASIC_HTML_TAGS, type TokenStructure } from './runtime/tokens';
 export {
     createTranslationResolver,
     TranslationKeyError,

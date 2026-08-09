@@ -11,5 +11,13 @@ export {
     type BuildExtras,
 } from './builder/build';
 export { angleTagStructure, BASIC_HTML_TAGS, type TokenStructure } from './runtime/tokens';
-export { generate, generateSync, icuData, taggedEmbeds } from 'keys-weaver';
+export {
+    icuData,
+    taggedEmbeds,
+    EMBED_TAG_PATTERN,
+    type IcuDataOptions,
+    type TaggedEmbedsOptions,
+} from './builder/structures';
+export { extractIcuParams, type ExtractIcuParamsOptions } from './builder/icu';
+export { generate, generateSync } from 'keys-weaver';
 export type { GenerateOptions, TokenStructure as CodegenTokenStructure } from 'keys-weaver';
